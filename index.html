@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="window._qrLibFailed=true"></script>
 <style>
 :root {
@@ -154,6 +155,20 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
     </div>
   </header>
 
+  <!-- TAB NAV -->
+  <nav class="border-b sticky top-0 z-30 bg-white" style="border-color:var(--srm-border);top:72px;">
+    <div class="max-w-7xl mx-auto px-3 flex gap-0">
+      <button onclick="switchTab('tab-suivi')" id="nav-suivi" class="tab-nav-btn px-4 py-2.5 text-xs font-bold border-b-2 transition-colors" style="border-color:var(--srm-blue);color:var(--srm-blue);">
+        <i class="fa-solid fa-clipboard-list mr-1"></i>Suivi Journalier
+      </button>
+      <button onclick="switchTab('tab-multi')" id="nav-multi" class="tab-nav-btn px-4 py-2.5 text-xs font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-chart-pie mr-1"></i>Consolidation Multi-Projets
+      </button>
+    </div>
+  </nav>
+
+  <!-- TAB: SUIVI JOURNALIER -->
+  <div id="tab-suivi">
   <main class="max-w-7xl mx-auto px-3 mt-4 pb-14 space-y-4">
 
     <!-- PROJECT NAME + IMPORT -->
@@ -632,7 +647,133 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
     </div>
 
   </main>
-</div>
+  </div><!-- end tab-suivi -->
+
+  <!-- TAB: MULTI-PROJETS -->
+  <div id="tab-multi" class="hidden">
+  <div class="max-w-7xl mx-auto px-3 mt-4 pb-14">
+
+    <!-- UPLOAD ZONE -->
+    <div class="srm-card p-5 mb-4">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="section-header-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fa-solid fa-layer-group"></i></span>
+        <div>
+          <h2 class="text-sm font-black uppercase tracking-wider" style="color:var(--srm-text)">Consolidation Multi-Projets</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Importez plusieurs fichiers Excel de suivi pour une vue consolidée avec graphiques comparatifs</p>
+        </div>
+      </div>
+      <div id="mp-dropzone" class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors" style="border-color:var(--srm-border);background:var(--srm-gray);"
+           onclick="document.getElementById('mp-file-input').click()"
+           ondragover="event.preventDefault();this.style.borderColor='var(--srm-blue)';this.style.background='var(--srm-blue-light)'"
+           ondragleave="this.style.borderColor='var(--srm-border)';this.style.background='var(--srm-gray)'"
+           ondrop="mpHandleDrop(event)">
+        <i class="fa-solid fa-cloud-arrow-up text-4xl mb-3" style="color:var(--srm-blue)"></i>
+        <p class="font-bold text-sm" style="color:var(--srm-text)">Glisser-déposer les fichiers Excel ici</p>
+        <p class="text-xs text-gray-400 mt-1">ou cliquer pour sélectionner</p>
+        <p class="text-xs mt-2 font-semibold" style="color:var(--srm-blue)">Formats acceptés : .xlsx .xls — exportés depuis cette application</p>
+        <input type="file" id="mp-file-input" multiple accept=".xlsx,.xls" class="hidden" onchange="mpLoadFiles(event)">
+      </div>
+      <div id="mp-files-list" class="mt-4 space-y-2 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-bold uppercase tracking-wider" style="color:var(--srm-text)"><i class="fa-solid fa-files mr-1" style="color:var(--srm-blue)"></i>Projets chargés</p>
+          <button onclick="mpClearAll()" class="text-xs text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can mr-1"></i>Tout effacer</button>
+        </div>
+        <div id="mp-files-container"></div>
+        <button onclick="mpAnalyze()" class="srm-btn-primary w-full justify-center py-3 text-sm mt-3" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">
+          <i class="fa-solid fa-chart-bar"></i> Lancer l'Analyse Consolidée
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="mp-results" class="hidden space-y-4">
+
+      <!-- KPI SUMMARY -->
+      <div class="srm-card p-4">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="section-header-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fa-solid fa-gauge-high"></i></span>
+            <h3 class="text-sm font-black uppercase tracking-wider" style="color:var(--srm-text)">Synthèse Globale — Tous Projets</h3>
+          </div>
+          <button onclick="mpExportPDF()" class="srm-btn-primary text-xs py-2" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">
+            <i class="fa-regular fa-file-pdf"></i> Rapport PDF Consolidé
+          </button>
+        </div>
+        <div id="mp-kpi-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="mp-progress-bars" class="space-y-3"></div>
+      </div>
+
+      <!-- CHARTS ROW 1 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-bars-progress mr-1" style="color:var(--srm-blue)"></i>Avancement global par projet (%)</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-avancement"></canvas></div>
+        </div>
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-ruler-horizontal mr-1" style="color:var(--srm-blue)"></i>Réseau linéaire posé (m) par projet</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-reseau"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-faucet mr-1" style="color:var(--srm-green)"></i>Branchements réalisés (u) par projet</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-branch"></canvas></div>
+        </div>
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-road mr-1" style="color:var(--srm-orange)"></i>Remise en état (m) par projet</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-remise"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 3 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-chart-pie mr-1" style="color:var(--srm-blue)"></i>Répartition linéaire par diamètre (tous projets)</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-dn-donut"></canvas></div>
+        </div>
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-chart-line mr-1" style="color:var(--srm-blue)"></i>Production linéaire cumulée dans le temps</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-timeline"></canvas></div>
+        </div>
+      </div>
+
+      <!-- DETAILED TABLE -->
+      <div class="srm-card p-4">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="section-header-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fa-solid fa-table-cells-large"></i></span>
+          <h3 class="text-sm font-black uppercase tracking-wider" style="color:var(--srm-text)">Tableau Détaillé par Projet</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse" id="mp-detail-table">
+            <thead>
+              <tr style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;">
+                <th class="p-2.5 text-left font-bold">Projet</th>
+                <th class="p-2.5 font-bold">Réseau (m)</th>
+                <th class="p-2.5 font-bold">Obj. Réseau</th>
+                <th class="p-2.5 font-bold">% Réseau</th>
+                <th class="p-2.5 font-bold">Branch. (u)</th>
+                <th class="p-2.5 font-bold">Obj. Branch.</th>
+                <th class="p-2.5 font-bold">% Branch.</th>
+                <th class="p-2.5 font-bold">Remise (m)</th>
+                <th class="p-2.5 font-bold">Racc. (u)</th>
+                <th class="p-2.5 font-bold">Vannes (u)</th>
+                <th class="p-2.5 font-bold">Avt. Global</th>
+                <th class="p-2.5 font-bold">Jours actifs</th>
+              </tr>
+            </thead>
+            <tbody id="mp-detail-tbody"></tbody>
+            <tfoot id="mp-detail-tfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /mp-results -->
+  </div>
+  </div><!-- end tab-multi -->
+
+</div><!-- end main-app -->
 
 <!-- TOAST -->
 <div id="toast" class="fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50 text-sm font-semibold" style="background:var(--srm-text);color:#fff">
@@ -1759,6 +1900,533 @@ function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateStr, tim
   const safeName=(proj||'STATS').replace(/[^a-zA-Z0-9_]/g,'_');
   doc.save(safeName+'_STATS_'+from+'_'+to+'.pdf');
   showToast('PDF Statistiques généré !');
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// MULTI-PROJECTS CONSOLIDATION MODULE
+// ════════════════════════════════════════════════════════════════
+
+let mpProjects = []; // Array of { name, records, targets }
+let mpCharts   = {}; // Chart.js instances (destroyed on re-render)
+
+// ── TAB SWITCHING ──
+function switchTab(tabId){
+  document.getElementById('tab-suivi').classList.toggle('hidden', tabId !== 'tab-suivi');
+  document.getElementById('tab-multi').classList.toggle('hidden', tabId !== 'tab-multi');
+  document.getElementById('nav-suivi').style.borderColor  = tabId === 'tab-suivi'  ? 'var(--srm-blue)' : 'transparent';
+  document.getElementById('nav-suivi').style.color        = tabId === 'tab-suivi'  ? 'var(--srm-blue)' : '#9ca3af';
+  document.getElementById('nav-multi').style.borderColor  = tabId === 'tab-multi'  ? '#7c3aed' : 'transparent';
+  document.getElementById('nav-multi').style.color        = tabId === 'tab-multi'  ? '#7c3aed' : '#9ca3af';
+}
+
+// ── FILE DROP / INPUT ──
+function mpHandleDrop(event){
+  event.preventDefault();
+  const dz = document.getElementById('mp-dropzone');
+  dz.style.borderColor = 'var(--srm-border)'; dz.style.background = 'var(--srm-gray)';
+  const files = Array.from(event.dataTransfer.files).filter(f => f.name.match(/\.xlsx?$/i));
+  if(files.length) mpProcessFiles(files);
+}
+
+function mpLoadFiles(event){
+  const files = Array.from(event.target.files);
+  if(files.length) mpProcessFiles(files);
+  event.target.value = '';
+}
+
+function mpProcessFiles(files){
+  let pending = files.length;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+
+        // Parse targets
+        const tgtSheet = wb.SheetNames.find(s => s.toLowerCase().includes('total'));
+        let targets = {linearReseau:0, branchements:0, remiseEtat:0, raccordements:0};
+        if(tgtSheet){
+          const ts = XLSX.utils.sheet_to_json(wb.Sheets[tgtSheet], {header:1});
+          targets.linearReseau  = parseFloat(ts[1]?ts[1][1]:0)||0;
+          targets.branchements  = parseFloat(ts[2]?ts[2][1]:0)||0;
+          targets.remiseEtat    = parseFloat(ts[3]?ts[3][1]:0)||0;
+          targets.raccordements = parseFloat(ts[4]?ts[4][1]:0)||0;
+        }
+
+        // Parse records
+        const sn = wb.SheetNames.includes("Registre Général") ? "Registre Général" : wb.SheetNames[0];
+        const jd = XLSX.utils.sheet_to_json(wb.Sheets[sn]);
+
+        const projName = (jd[0] && jd[0]['Projet']) ? jd[0]['Projet'] : file.name.replace(/\.xlsx?$/i,'');
+        const recs = jd.map((row,i) => parseRow(row, i));
+
+        // Check duplicate
+        const existingIdx = mpProjects.findIndex(p => p.name === projName);
+        if(existingIdx >= 0) mpProjects.splice(existingIdx, 1);
+
+        mpProjects.push({ name: projName, records: recs, targets, fileName: file.name });
+      } catch(err){ console.error('Error reading', file.name, err); showToast('Erreur lecture : '+file.name, 'error'); }
+      pending--;
+      if(pending === 0) mpRefreshFilesList();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function mpRefreshFilesList(){
+  const list = document.getElementById('mp-files-list');
+  const container = document.getElementById('mp-files-container');
+  list.classList.toggle('hidden', mpProjects.length === 0);
+  container.innerHTML = '';
+  mpProjects.forEach((proj, idx) => {
+    const div = document.createElement('div');
+    div.className = 'flex items-center justify-between p-2.5 rounded-xl border';
+    div.style.cssText = 'background:var(--srm-gray);border-color:var(--srm-border)';
+    div.innerHTML = `<div class="flex items-center gap-2 flex-1 min-w-0">
+      <i class="fa-solid fa-file-excel text-green-600 flex-shrink-0"></i>
+      <div class="min-w-0">
+        <p class="text-xs font-bold truncate" style="color:var(--srm-text)">${proj.name}</p>
+        <p class="text-[10px] text-gray-400">${proj.records.length} enregistrements — ${proj.fileName}</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <span class="text-[10px] px-2 py-0.5 rounded font-bold" style="background:var(--srm-blue-light);color:var(--srm-blue)">Obj. Réseau: ${proj.targets.linearReseau}m</span>
+      <button onclick="mpRemoveProject(${idx})" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fa-solid fa-xmark"></i></button>
+    </div>`;
+    container.appendChild(div);
+  });
+  showToast(mpProjects.length + ' projet(s) chargé(s)');
+}
+
+function mpRemoveProject(idx){
+  mpProjects.splice(idx, 1);
+  mpRefreshFilesList();
+}
+
+function mpClearAll(){
+  mpProjects = [];
+  mpRefreshFilesList();
+  document.getElementById('mp-results').classList.add('hidden');
+  Object.values(mpCharts).forEach(ch => { try{ ch.destroy(); }catch(e){} });
+  mpCharts = {};
+}
+
+// ── AGGREGATION HELPERS ──
+function mpGetCumuls(records){
+  const res = {75:0,90:0,110:0,160:0,225:0,315:0};
+  const branch = {DN32:0, DN50:0};
+  const remise = {};
+  const service = {j32:0,c1_32:0,c2_32:0,c3_32:0,j50:0,c1_50:0,c2_50:0,c3_50:0};
+  const racc = {r200:0, r300:0};
+  const vannes = {v150:0, v300:0};
+
+  records.forEach(r => {
+    if(r.category === 'Réseau'){
+      if(r.dn && res[r.dn] !== undefined) res[r.dn] += (r.distance||0);
+      vannes.v150 += (r.v150_qty||0); vannes.v300 += (r.v300_qty||0);
+    }
+    if(r.category === 'Branchements'){ branch.DN32 += (r.br_dn32_qty||0); branch.DN50 += (r.br_dn50_qty||0); }
+    if(r.category === 'Remise en état'){ const t = r.remise_type||'Autre'; remise[t] = (remise[t]||0) + (r.distance||0); }
+    if(r.category === 'Mise en service' && r.ms_data){
+      const m = r.ms_data;
+      service.j32+=m.j32||0; service.c1_32+=m.c1_32||0; service.c2_32+=m.c2_32||0; service.c3_32+=m.c3_32||0;
+      service.j50+=m.j50||0; service.c1_50+=m.c1_50||0; service.c2_50+=m.c2_50||0; service.c3_50+=m.c3_50||0;
+      racc.r200+=m.r200||0; racc.r300+=m.r300||0;
+    }
+  });
+  return { reseau:res, branch, remise, service, vannes, raccordements:racc };
+}
+
+function mpGetAvancement(cumuls, targets){
+  const tL = Object.values(cumuls.reseau).reduce((a,b)=>a+b,0);
+  const tB = cumuls.branch.DN32 + cumuls.branch.DN50;
+  const tRem = Object.values(cumuls.remise).reduce((a,b)=>a+b,0);
+  const tRac = cumuls.raccordements.r200 + cumuls.raccordements.r300;
+  const pct = (v,t) => t>0 ? Math.min(100, v/t*100) : null;
+  const vals = [pct(tL, targets.linearReseau), pct(tB, targets.branchements),
+                pct(tRem, targets.remiseEtat), pct(tRac, targets.raccordements)].filter(v => v !== null);
+  const global = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+  return { tL, tB, tRem, tRac, global, pctReseau:pct(tL,targets.linearReseau), pctBranch:pct(tB,targets.branchements) };
+}
+
+// ── MAIN ANALYZE ──
+function mpAnalyze(){
+  if(!mpProjects.length){ showToast('Aucun projet chargé !','error'); return; }
+
+  const results = mpProjects.map(p => ({
+    ...p,
+    cumuls: mpGetCumuls(p.records),
+    avt: null
+  }));
+  results.forEach(r => { r.avt = mpGetAvancement(r.cumuls, r.targets); });
+
+  document.getElementById('mp-results').classList.remove('hidden');
+
+  mpRenderKPI(results);
+  mpRenderProgressBars(results);
+  mpRenderCharts(results);
+  mpRenderTable(results);
+
+  document.getElementById('mp-results').scrollIntoView({behavior:'smooth'});
+}
+
+// ── KPI ──
+function mpRenderKPI(results){
+  const totalL = results.reduce((s,r)=>s+r.avt.tL,0);
+  const totalB = results.reduce((s,r)=>s+r.avt.tB,0);
+  const totalRem = results.reduce((s,r)=>s+r.avt.tRem,0);
+  const totalRac = results.reduce((s,r)=>s+r.avt.tRac,0);
+  const avgGlobal = results.reduce((s,r)=>s+r.avt.global,0)/results.length;
+
+  const kpis = [
+    {label:'Réseau total posé', val: totalL.toFixed(1)+' m', icon:'fa-pipe', col:'var(--srm-blue)'},
+    {label:'Branchements total', val: totalB+' u', icon:'fa-faucet', col:'var(--srm-green)'},
+    {label:'Remise en état total', val: totalRem.toFixed(1)+' m', icon:'fa-road', col:'var(--srm-orange)'},
+    {label:'Avancement moyen global', val: avgGlobal.toFixed(1)+'%', icon:'fa-gauge-high', col:'#7c3aed'},
+  ];
+
+  document.getElementById('mp-kpi-grid').innerHTML = kpis.map(k => `
+    <div class="p-3 rounded-xl border text-center" style="background:${k.col}10;border-color:${k.col}40">
+      <i class="fa-solid ${k.icon} text-lg mb-1" style="color:${k.col}"></i>
+      <p class="text-xl font-black" style="color:${k.col}">${k.val}</p>
+      <p class="text-[10px] font-semibold text-gray-500 mt-0.5">${k.label}</p>
+      <p class="text-[9px] text-gray-400">${results.length} projet(s)</p>
+    </div>`).join('');
+}
+
+// ── PROGRESS BARS ──
+function mpRenderProgressBars(results){
+  const container = document.getElementById('mp-progress-bars');
+  container.innerHTML = '<p class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color:var(--srm-text)"><i class="fa-solid fa-tasks mr-1" style="color:#7c3aed"></i>Avancement par projet</p>';
+  results.forEach(r => {
+    const g = r.avt.global;
+    const col = g>=75?'var(--srm-green)':g>=50?'var(--srm-orange)':'#ef4444';
+    container.innerHTML += `<div class="mb-2">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs font-bold text-gray-700">${r.name}</span>
+        <span class="text-xs font-black" style="color:${col}">${g.toFixed(1)}%</span>
+      </div>
+      <div class="progress-bar-bg" style="height:10px;">
+        <div class="progress-bar-fill" style="width:${g}%;background:${col};height:10px;"></div>
+      </div>
+    </div>`;
+  });
+}
+
+// ── CHARTS ──
+function mpDestroyChart(id){
+  if(mpCharts[id]){ try{mpCharts[id].destroy();}catch(e){} delete mpCharts[id]; }
+}
+
+const MP_COLORS = ['#2B7FC1','#4DB05B','#E8823E','#7c3aed','#0891b2','#be185d','#d97706','#059669'];
+
+function mpRenderCharts(results){
+  const labels = results.map(r => r.name.length > 15 ? r.name.substring(0,15)+'…' : r.name);
+  const colors = labels.map((_,i) => MP_COLORS[i % MP_COLORS.length]);
+
+  // 1. Avancement (horizontal bar)
+  mpDestroyChart('avancement');
+  mpCharts['avancement'] = new Chart(document.getElementById('chart-avancement'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Avancement (%)',data:results.map(r=>r.avt.global.toFixed(1)),backgroundColor:colors,borderRadius:6},
+        {label:'Objectif (100%)',data:results.map(()=>100),backgroundColor:'rgba(0,0,0,0.05)',borderRadius:6}
+      ]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x+'%'}}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:10}}}}}
+  });
+
+  // 2. Réseau linéaire
+  mpDestroyChart('reseau');
+  mpCharts['reseau'] = new Chart(document.getElementById('chart-reseau'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Réalisé (m)',data:results.map(r=>r.avt.tL.toFixed(1)),backgroundColor:colors,borderRadius:6},
+        {label:'Objectif (m)',data:results.map(r=>r.targets.linearReseau),backgroundColor:'rgba(43,127,193,0.15)',borderRadius:6,borderColor:'rgba(43,127,193,0.5)',borderWidth:1}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{y:{ticks:{font:{size:10}}}}}
+  });
+
+  // 3. Branchements
+  mpDestroyChart('branch');
+  mpCharts['branch'] = new Chart(document.getElementById('chart-branch'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'DN 32',data:results.map(r=>r.cumuls.branch.DN32),backgroundColor:'rgba(77,176,91,0.7)',borderRadius:4},
+        {label:'DN 50',data:results.map(r=>r.cumuls.branch.DN50),backgroundColor:'rgba(77,176,91,0.35)',borderRadius:4},
+        {label:'Objectif',data:results.map(r=>r.targets.branchements),backgroundColor:'rgba(0,0,0,0.06)',borderRadius:4,borderColor:'rgba(77,176,91,0.5)',borderWidth:1}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{y:{stacked:false,ticks:{font:{size:10}}}}}
+  });
+
+  // 4. Remise en état
+  mpDestroyChart('remise');
+  mpCharts['remise'] = new Chart(document.getElementById('chart-remise'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{label:'Remise en état (m)',data:results.map(r=>r.avt.tRem.toFixed(1)),backgroundColor:colors.map(c=>c+'bb'),borderRadius:6}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}}}}}
+  });
+
+  // 5. DN distribution donut
+  const dnLabels = ['DN 75','DN 90','DN 110','DN 160','DN 225','DN 315'];
+  const dnTotals = ['75','90','110','160','225','315'].map(dn => results.reduce((s,r)=>s+(r.cumuls.reseau[dn]||0),0));
+  mpDestroyChart('dn-donut');
+  mpCharts['dn-donut'] = new Chart(document.getElementById('chart-dn-donut'), {
+    type:'doughnut',
+    data:{labels:dnLabels,datasets:[{data:dnTotals,backgroundColor:['#2B7FC1','#4DB05B','#E8823E','#7c3aed','#0891b2','#be185d'],hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}}}}
+  });
+
+  // 6. Timeline — cumulative production per project
+  mpDestroyChart('timeline');
+  const allDates = [...new Set(results.flatMap(r=>r.records.map(rec=>rec.dateStr)).filter(Boolean))].sort();
+  const timelineDatasets = results.map((proj,i) => {
+    let cum = 0;
+    const data = allDates.map(d => {
+      const dayRec = proj.records.filter(r=>r.dateStr===d&&r.category==='Réseau');
+      cum += dayRec.reduce((s,r)=>s+(r.distance||0),0);
+      return cum.toFixed(1);
+    });
+    return {label:proj.name,data,borderColor:MP_COLORS[i%MP_COLORS.length],backgroundColor:'transparent',tension:0.3,fill:false,pointRadius:2};
+  });
+  mpCharts['timeline'] = new Chart(document.getElementById('chart-timeline'), {
+    type:'line',
+    data:{labels:allDates,datasets:timelineDatasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ── DETAIL TABLE ──
+function mpRenderTable(results){
+  const tbody = document.getElementById('mp-detail-tbody');
+  const tfoot = document.getElementById('mp-detail-tfoot');
+  const pct = (v,t) => t>0 ? Math.min(100,v/t*100).toFixed(0)+'%' : '—';
+  const colPct = p => parseFloat(p)>=75?'color:#16a34a':parseFloat(p)>=50?'color:#d97706':'color:#ef4444';
+  const activeDays = recs => new Set(recs.map(r=>r.dateStr).filter(Boolean)).size;
+
+  tbody.innerHTML = results.map((r,i) => {
+    const bg = i%2===0?'':'background:#f7f9ff';
+    const g = r.avt.global.toFixed(1)+'%';
+    const pR = pct(r.avt.tL, r.targets.linearReseau);
+    const pB = pct(r.avt.tB, r.targets.branchements);
+    const van = r.cumuls.vannes.v150+r.cumuls.vannes.v300;
+    return `<tr style="${bg}">
+      <td class="p-2 font-bold text-xs" style="color:var(--srm-text)">${r.name}</td>
+      <td class="p-2 text-center font-mono-custom font-bold" style="color:var(--srm-blue)">${r.avt.tL.toFixed(2)}</td>
+      <td class="p-2 text-center text-gray-500">${r.targets.linearReseau}</td>
+      <td class="p-2 text-center font-bold" style="${colPct(pR)}">${pR}</td>
+      <td class="p-2 text-center font-mono-custom font-bold" style="color:var(--srm-green)">${r.avt.tB}</td>
+      <td class="p-2 text-center text-gray-500">${r.targets.branchements}</td>
+      <td class="p-2 text-center font-bold" style="${colPct(pB)}">${pB}</td>
+      <td class="p-2 text-center">${r.avt.tRem.toFixed(2)}</td>
+      <td class="p-2 text-center">${r.avt.tRac}</td>
+      <td class="p-2 text-center">${van}</td>
+      <td class="p-2 text-center font-black" style="${colPct(g)}">${g}</td>
+      <td class="p-2 text-center">${activeDays(r.records)}</td>
+    </tr>`;
+  }).join('');
+
+  // Total row
+  const totL = results.reduce((s,r)=>s+r.avt.tL,0);
+  const totB = results.reduce((s,r)=>s+r.avt.tB,0);
+  const totRem = results.reduce((s,r)=>s+r.avt.tRem,0);
+  const totRac = results.reduce((s,r)=>s+r.avt.tRac,0);
+  const totVan = results.reduce((s,r)=>s+r.cumuls.vannes.v150+r.cumuls.vannes.v300,0);
+  const avgAvt = (results.reduce((s,r)=>s+r.avt.global,0)/results.length).toFixed(1)+'%';
+  tfoot.innerHTML = `<tr style="background:linear-gradient(90deg,#ede9fe,#f5f3ff);font-weight:900;">
+    <td class="p-2 text-xs" style="color:#7c3aed">TOTAL / MOYENNE (${results.length} projets)</td>
+    <td class="p-2 text-center" style="color:var(--srm-blue)">${totL.toFixed(2)}</td>
+    <td class="p-2 text-center text-gray-400">${results.reduce((s,r)=>s+r.targets.linearReseau,0)}</td>
+    <td class="p-2 text-center">—</td>
+    <td class="p-2 text-center" style="color:var(--srm-green)">${totB}</td>
+    <td class="p-2 text-center text-gray-400">${results.reduce((s,r)=>s+r.targets.branchements,0)}</td>
+    <td class="p-2 text-center">—</td>
+    <td class="p-2 text-center">${totRem.toFixed(2)}</td>
+    <td class="p-2 text-center">${totRac}</td>
+    <td class="p-2 text-center">${totVan}</td>
+    <td class="p-2 text-center" style="color:#7c3aed">${avgAvt}</td>
+    <td class="p-2 text-center">${results.reduce((s,r)=>s+new Set(r.records.map(rec=>rec.dateStr).filter(Boolean)).size,0)}</td>
+  </tr>`;
+}
+
+// ── EXPORT PDF ──
+function mpExportPDF(){
+  if(!mpProjects.length){ showToast('Aucun projet à exporter !','error'); return; }
+  const results = mpProjects.map(p => ({...p, cumuls:mpGetCumuls(p.records), avt:null}));
+  results.forEach(r => { r.avt = mpGetAvancement(r.cumuls, r.targets); });
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR');
+  const timeStr = now.toLocaleTimeString('fr-FR');
+  const uname = currentUser ? (USERS[currentUser]?.displayName||currentUser) : '—';
+
+  const qrText = 'Consolidation Multi-Projets\nÉtabli par: '+uname+'\nExport: '+dateStr+' '+timeStr+
+    '\nNombre de projets: '+results.length+
+    '\nTotal réseau: '+results.reduce((s,r)=>s+r.avt.tL,0).toFixed(2)+' m'+
+    '\nTotal branchements: '+results.reduce((s,r)=>s+r.avt.tB,0)+' u';
+
+  function fetchQR(text,cb){
+    var enc=encodeURIComponent(text.substring(0,400));
+    function tryU(url,nxt){var img=new Image();img.crossOrigin='anonymous';img.onload=function(){try{var cv=document.createElement('canvas');cv.width=200;cv.height=200;cv.getContext('2d').drawImage(img,0,0,200,200);cb(cv.toDataURL('image/png'));}catch(e){nxt();}};img.onerror=nxt;setTimeout(nxt,5000);img.src=url;}
+    tryU('https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&data='+enc,function(){tryU('https://chart.googleapis.com/chart?chs=200x200&cht=qr&choe=UTF-8&chl='+enc,function(){cb(null);});});
+  }
+
+  showToast('Génération PDF Consolidation...');
+  fetchQR(qrText, function(qrDU){ _mpDoPDF(qrDU, results, uname, dateStr, timeStr); });
+}
+
+function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF('l','mm','a4');
+  const pW = doc.internal.pageSize.getWidth(), pH = doc.internal.pageSize.getHeight();
+  const PU=[124,58,237], B=[43,127,193], G=[77,176,91], O=[232,130,62], DK=[30,45,61], LB=[232,244,253], GR=[244,246,249];
+
+  function hdr(){
+    doc.setFillColor(PU[0],PU[1],PU[2]); doc.rect(0,0,pW,18,'F');
+    try{ if(LOGO_B64) doc.addImage(LOGO_B64,'PNG',3,2,13,13); }catch(e){}
+    doc.setTextColor(255,255,255); doc.setFontSize(6); doc.setFont(undefined,'bold');
+    doc.text('DIRECTION PRÉFECTORALE AIN CHOCK HAY HASSANI',20,6);
+    doc.setFont(undefined,'normal'); doc.setFontSize(5.5);
+    doc.text('DÉPARTEMENT ÉTUDES ET TRAVAUX — DIVISION EAU POTABLE',20,10.5);
+    doc.setFont(undefined,'bold'); doc.setFontSize(9);
+    doc.text('RAPPORT DE CONSOLIDATION MULTI-PROJETS',pW/2,11,{align:'center'});
+    if(qrDU){ try{doc.addImage(qrDU,'PNG',pW-18,1.5,14,14);}catch(e){} }
+    doc.setTextColor(DK[0],DK[1],DK[2]);
+  }
+  function ftr(n){ doc.setTextColor(150,160,170); doc.setFontSize(7); doc.text('Page '+n+' — '+dateStr+' '+timeStr, pW/2, pH-3, {align:'center'}); }
+
+  hdr();
+
+  // Title strip
+  doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,8,2,2,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont(undefined,'bold');
+  doc.text('TABLEAU DE BORD CONSOLIDÉ — '+results.length+' PROJETS AEP',pW/2,25.2,{align:'center'});
+  doc.setTextColor(DK[0],DK[1],DK[2]);
+  let Y = 31;
+
+  // Info
+  doc.setFillColor(GR[0],GR[1],GR[2]); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
+  doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(PU[0],PU[1],PU[2]);
+  doc.text('INFORMATIONS',16,Y+4.2); doc.setTextColor(DK[0],DK[1],DK[2]); Y+=8;
+
+  doc.autoTable({head:[],body:[
+    ['Établi par :',uname,'Date export :',dateStr+' '+timeStr],
+    ['Nombre de projets :',String(results.length),'Projets :',results.map(r=>r.name).join(', ').substring(0,80)]
+  ],startY:Y,styles:{fontSize:7,cellPadding:1.4},columnStyles:{0:{fontStyle:'bold',textColor:PU,cellWidth:30},1:{cellWidth:80},2:{fontStyle:'bold',textColor:PU,cellWidth:30},3:{cellWidth:'auto'}},margin:{left:14,right:14},tableWidth:pW-28});
+  Y = doc.lastAutoTable.finalY+4;
+
+  // KPIs
+  const totL = results.reduce((s,r)=>s+r.avt.tL,0);
+  const totB = results.reduce((s,r)=>s+r.avt.tB,0);
+  const totRem = results.reduce((s,r)=>s+r.avt.tRem,0);
+  const totRac = results.reduce((s,r)=>s+r.avt.tRac,0);
+  const avgAvt = results.reduce((s,r)=>s+r.avt.global,0)/results.length;
+
+  doc.autoTable({head:[['Réseau Total (m)','Branchements Total (u)','Remise Total (m)','Raccordements Total (u)','Avancement Moyen']],
+    body:[[totL.toFixed(2),totB,totRem.toFixed(2),totRac,avgAvt.toFixed(1)+'%']],
+    startY:Y,styles:{fontSize:8,cellPadding:3,halign:'center',fontStyle:'bold'},
+    headStyles:{fillColor:PU,textColor:[255,255,255],fontSize:7},
+    bodyStyles:{fillColor:[245,243,255],textColor:PU},
+    margin:{left:14,right:14},tableWidth:pW-28});
+  Y = doc.lastAutoTable.finalY+4;
+
+  // Per-project table
+  doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont(undefined,'bold');
+  doc.text('DÉTAIL PAR PROJET',16,Y+4.2); Y+=8;
+
+  const pct=(v,t)=>t>0?Math.min(100,v/t*100).toFixed(0)+'%':'—';
+  const tableBody = results.map(r => [
+    r.name.substring(0,25),
+    r.avt.tL.toFixed(2),String(r.targets.linearReseau),pct(r.avt.tL,r.targets.linearReseau),
+    String(r.avt.tB),String(r.targets.branchements),pct(r.avt.tB,r.targets.branchements),
+    r.avt.tRem.toFixed(2),String(r.avt.tRac),
+    String(r.cumuls.vannes.v150+r.cumuls.vannes.v300),
+    r.avt.global.toFixed(1)+'%',
+    String(new Set(r.records.map(rec=>rec.dateStr).filter(Boolean)).size)
+  ]);
+
+  doc.autoTable({
+    head:[['Projet','Réseau(m)','Obj.R','%R','Branch.','Obj.B','%B','Remise(m)','Racc.','Vannes','Avt.%','Jours']],
+    body:tableBody,startY:Y,
+    styles:{fontSize:6.5,cellPadding:1.8},
+    headStyles:{fillColor:PU,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+    alternateRowStyles:{fillColor:[247,251,255]},
+    columnStyles:{0:{cellWidth:'auto',halign:'left'},1:{halign:'center'},2:{halign:'center'},3:{halign:'center',fontStyle:'bold'},4:{halign:'center'},5:{halign:'center'},6:{halign:'center',fontStyle:'bold'},7:{halign:'center'},8:{halign:'center'},9:{halign:'center'},10:{halign:'center',fontStyle:'bold',textColor:PU},11:{halign:'center'}},
+    margin:{left:14,right:14},tableWidth:pW-28,
+    didParseCell:function(d){
+      if(d.column.index===3||d.column.index===6||d.column.index===10){
+        const v=parseFloat(d.cell.raw);
+        if(v>=75)d.cell.styles.textColor=[22,163,74];
+        else if(v>=50)d.cell.styles.textColor=[217,119,6];
+        else if(!isNaN(v))d.cell.styles.textColor=[239,68,68];
+      }
+    }
+  });
+
+  ftr(1);
+
+  // PAGE 2 — Progress bars per project
+  doc.addPage(); hdr();
+  doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+  doc.text('AVANCEMENT PAR PROJET ET PAR PHASE',pW/2,24.8,{align:'center'});
+  doc.setTextColor(DK[0],DK[1],DK[2]);
+  Y=30;
+
+  const phaseColors = [B, G, O, [99,60,180]];
+  const phaseNames  = ['Réseau Linéaire','Branchements','Remise en État','Raccordements'];
+  const colW = (pW-28)/2 - 5;
+
+  results.forEach((r,pi) => {
+    const col  = pi%2===0 ? 14 : 14+colW+10;
+    const rowY = pi%2===0 ? Y : Y;
+    if(pi>0&&pi%2===0) Y+=60;
+
+    doc.setFillColor(...GR); doc.roundedRect(col,Y,colW,6,1,1,'F');
+    doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(DK[0],DK[1],DK[2]);
+    doc.text(r.name.substring(0,30),col+2,Y+4.2);
+    doc.setFontSize(7); doc.setTextColor(PU[0],PU[1],PU[2]);
+    doc.text(r.avt.global.toFixed(1)+'%',col+colW-2,Y+4.2,{align:'right'});
+    let phY = Y+7;
+
+    const phases=[
+      {v:r.avt.tL,t:r.targets.linearReseau,n:'Réseau',u:'m',c:B},
+      {v:r.avt.tB,t:r.targets.branchements,n:'Branch.',u:'u',c:G},
+      {v:r.avt.tRem,t:r.targets.remiseEtat,n:'Remise',u:'m',c:O},
+      {v:r.avt.tRac,t:r.targets.raccordements,n:'Raccords',u:'u',c:PU}
+    ];
+    phases.forEach(ph => {
+      const p = ph.t>0 ? Math.min(100,ph.v/ph.t*100) : 0;
+      doc.setFontSize(6.5); doc.setFont(undefined,'bold'); doc.setTextColor(60,70,80);
+      doc.text(ph.n,col,phY+3);
+      doc.setFont(undefined,'normal'); doc.setTextColor(130,140,150);
+      doc.text((typeof ph.v==='number'?(ph.v%1?ph.v.toFixed(1):ph.v):ph.v)+ph.u+' / '+ph.t+ph.u,col+colW,phY+3,{align:'right'});
+      doc.setFillColor(215,225,238); doc.roundedRect(col,phY+4,colW,4,1,1,'F');
+      const filled = p/100*colW;
+      if(filled>0){ doc.setFillColor(ph.c[0],ph.c[1],ph.c[2]); doc.roundedRect(col,phY+4,filled,4,1,1,'F'); }
+      const pc=p>=75?[22,163,74]:p>=50?[217,119,6]:[239,68,68];
+      if(filled>8){ doc.setFontSize(5.5); doc.setFont(undefined,'bold'); doc.setTextColor(pc[0],pc[1],pc[2]); doc.text(p.toFixed(0)+'%',col+filled/2,phY+7.5,{align:'center'}); }
+      phY+=12;
+    });
+    if(pi%2===1) Y+=60;
+  });
+
+  ftr(2);
+  doc.save('CONSOLIDATION_MULTI_PROJETS_'+dateStr.replace(/\//g,'-')+'.pdf');
+  showToast('Rapport PDF Consolidation exporté !');
 }
 
 </script>
