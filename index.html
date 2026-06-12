@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="window._qrLibFailed=true"></script>
 <style>
 :root {
@@ -181,7 +182,7 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
         <input type="text" id="global-project-name" placeholder="Ex: PROJET_AEP_AIN_CHOCK_2025" class="srm-input font-bold">
         <div class="mt-2">
           <label class="block text-xs font-semibold text-gray-500 mb-1"><i class="fa-solid fa-calendar-day mr-1" style="color:var(--srm-blue)"></i>Date de début du projet</label>
-          <input type="date" id="project-start-date" class="srm-input text-sm">
+          <input type="date" id="project-start-date" class="srm-input text-sm" onchange="renderProgressBars()">
         </div>
       </div>
       <div>
@@ -273,6 +274,12 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
           </div>
           <div class="progress-bar-bg"><div id="global-progress-fill" class="progress-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--srm-blue),var(--srm-green))"></div></div>
         </div>
+      </div>
+
+      <!-- DÉLAI ANALYSIS -->
+      <div id="delai-section" class="pt-3 border-t space-y-2 hidden" style="border-color:var(--srm-border)">
+        <p class="text-[10px] font-bold uppercase tracking-wider" style="color:var(--srm-text)"><i class="fa-solid fa-hourglass-half mr-1" style="color:#7c3aed"></i>Analyse du Délai Contractuel</p>
+        <div id="delai-content"></div>
       </div>
     </div>
 
@@ -790,7 +797,7 @@ let capturedPhotos = JSON.parse(localStorage.getItem('water_project_photos')) ||
 let autoCapturedLocation = { text:"Non disponible", mapsUrl:"" };
 let loadedFileName = null;
 let currentUser = null;
-let projectTargets = { linearReseau:0, branchements:0, remiseEtat:0, raccordements:0 };
+let projectTargets = { linearReseau:0, branchements:0, remiseEtat:0, raccordements:0, delaiMois:0 };
 
 const USERS = {
   "asaber":     { password:"Al@e16Lokmn23",  displayName:"A. SABER",     role:"Chargé d'Affaires" },
@@ -912,6 +919,7 @@ function importPreviousExcel(event){
         projectTargets.branchements=parseFloat(ts[2]?ts[2][1]:0)||0;
         projectTargets.remiseEtat=parseFloat(ts[3]?ts[3][1]:0)||0;
         projectTargets.raccordements=parseFloat(ts[4]?ts[4][1]:0)||0;
+        projectTargets.delaiMois=parseFloat(ts[5]?ts[5][1]:0)||0;
       }
       const sn=wb.SheetNames.includes("Registre Général")?"Registre Général":wb.SheetNames[0];
       const jd=XLSX.utils.sheet_to_json(wb.Sheets[sn]);
@@ -1047,7 +1055,8 @@ function buildWorkbook(){
     ["Linéaire total de réseau à poser (m)",projectTargets.linearReseau],
     ["Nombre total de branchements à réaliser (u)",projectTargets.branchements],
     ["Linéaire total de remise en état (m)",projectTargets.remiseEtat],
-    ["Nombre de raccordements à réaliser (u)",projectTargets.raccordements]
+    ["Nombre de raccordements à réaliser (u)",projectTargets.raccordements],
+    ["Délai d'exécution (mois)",projectTargets.delaiMois]
   ];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(tRows),"total à réaliser");
 
@@ -1534,6 +1543,141 @@ function renderProgressBars(){
   const globalPct=validPhases.length?validPhases.reduce((s,ph)=>s+ph.p,0)/validPhases.length:0;
   document.getElementById('global-progress-fill').style.width=globalPct.toFixed(1)+'%';
   document.getElementById('global-pct-text').innerText=globalPct.toFixed(1)+'%';
+  renderDelaiAnalysis(c, globalPct);
+}
+
+// ════════════════════════════ ANALYSE DU DÉLAI ════════════════════════════
+function renderDelaiAnalysis(c, globalPct){
+  const section = document.getElementById('delai-section');
+  const content = document.getElementById('delai-content');
+  const startDateVal = document.getElementById('project-start-date').value;
+
+  if(!projectTargets.delaiMois || projectTargets.delaiMois<=0 || !startDateVal){
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+
+  const start = new Date(startDateVal+'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const totalDays = Math.round(projectTargets.delaiMois * 30.4375); // mois -> jours
+  const deadline = new Date(start); deadline.setDate(deadline.getDate() + totalDays);
+
+  const elapsedDays = Math.max(0, Math.floor((today - start) / 86400000));
+  const remainingDays = Math.max(0, Math.floor((deadline - today) / 86400000));
+  const timePct = Math.min(100, (elapsedDays/totalDays)*100);
+
+  // Écart avancement réel vs théorique (temps écoulé)
+  const ecart = globalPct - timePct;
+  const enRetard = ecart < -2; // tolérance 2 points
+  const enAvance = ecart > 2;
+
+  // Cadences quotidiennes nécessaires pour finir chaque phase à temps
+  const totalLinear = Object.values(c.reseau).reduce((a,b)=>a+b,0);
+  const totalBranch = c.branch.DN32+c.branch.DN50;
+  const totalRemise = Object.values(c.remise).reduce((a,b)=>a+b,0);
+  const totalRacc = c.raccordements.r200+c.raccordements.r300;
+
+  const remainingDaysSafe = Math.max(1, remainingDays);
+  const cadences = [
+    {name:'Réseau linéaire', restant: Math.max(0, projectTargets.linearReseau - totalLinear), unit:'m', target: projectTargets.linearReseau},
+    {name:'Branchements',    restant: Math.max(0, projectTargets.branchements - totalBranch), unit:'u', target: projectTargets.branchements},
+    {name:'Remise en état',  restant: Math.max(0, projectTargets.remiseEtat - totalRemise),    unit:'m', target: projectTargets.remiseEtat},
+    {name:'Raccordements',   restant: Math.max(0, projectTargets.raccordements - totalRacc),   unit:'u', target: projectTargets.raccordements},
+  ].filter(c=>c.target>0);
+
+  const fmtDate = d => d.toLocaleDateString('fr-FR');
+
+  // Statut global
+  let statusBadge, statusIcon, statusColor, statusBg, statusMsg;
+  if(remainingDays<=0 && globalPct<100){
+    statusBadge='DÉLAI DÉPASSÉ'; statusIcon='fa-circle-exclamation'; statusColor='#dc2626'; statusBg='#fef2f2';
+    statusMsg='Le délai contractuel est dépassé alors que le projet n\'est pas achevé. Une accélération urgente est requise.';
+  } else if(enRetard){
+    statusBadge='EN RETARD'; statusIcon='fa-triangle-exclamation'; statusColor='#d97706'; statusBg='#fffbeb';
+    statusMsg='L\'avancement réel ('+globalPct.toFixed(1)+'%) est inférieur à l\'avancement théorique attendu ('+timePct.toFixed(1)+'%). Un rattrapage est nécessaire.';
+  } else if(enAvance){
+    statusBadge='EN AVANCE'; statusIcon='fa-circle-check'; statusColor='#16a34a'; statusBg='#f0fdf4';
+    statusMsg='L\'avancement réel ('+globalPct.toFixed(1)+'%) dépasse l\'avancement théorique ('+timePct.toFixed(1)+'%). Le projet est en avance sur le planning.';
+  } else {
+    statusBadge='DANS LES TEMPS'; statusIcon='fa-circle-check'; statusColor='#2B7FC1'; statusBg='var(--srm-blue-light)';
+    statusMsg='L\'avancement réel ('+globalPct.toFixed(1)+'%) correspond à l\'avancement théorique attendu ('+timePct.toFixed(1)+'%).';
+  }
+
+  let html = `
+    <div class="p-3 rounded-xl mb-3" style="background:${statusBg};border:1px solid ${statusColor}33;">
+      <div class="flex items-center gap-2 mb-1.5">
+        <i class="fa-solid ${statusIcon}" style="color:${statusColor}"></i>
+        <span class="text-sm font-black" style="color:${statusColor}">${statusBadge}</span>
+      </div>
+      <p class="text-xs text-gray-600 leading-relaxed">${statusMsg}</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+      <div class="p-2.5 rounded-xl text-center" style="background:var(--srm-blue-light);border:1px solid #b8d9f0">
+        <p class="text-lg font-black" style="color:var(--srm-blue-dark)">${projectTargets.delaiMois}</p>
+        <p class="text-[10px] font-semibold text-gray-500">Délai (mois)</p>
+      </div>
+      <div class="p-2.5 rounded-xl text-center" style="background:var(--srm-green-light);border:1px solid #b3e0ba">
+        <p class="text-lg font-black" style="color:var(--srm-green-dark)">${elapsedDays}</p>
+        <p class="text-[10px] font-semibold text-gray-500">Jours écoulés / ${totalDays}</p>
+      </div>
+      <div class="p-2.5 rounded-xl text-center" style="background:${remainingDays<=0?'#fef2f2':'var(--srm-orange-light)'};border:1px solid ${remainingDays<=0?'#fecaca':'#f9c9a0'}">
+        <p class="text-lg font-black" style="color:${remainingDays<=0?'#dc2626':'var(--srm-orange-dark)'}">${remainingDays}</p>
+        <p class="text-[10px] font-semibold text-gray-500">Jours restants</p>
+      </div>
+      <div class="p-2.5 rounded-xl text-center" style="background:#f5f3ff;border:1px solid #ddd6fe">
+        <p class="text-lg font-black" style="color:#7c3aed">${fmtDate(deadline)}</p>
+        <p class="text-[10px] font-semibold text-gray-500">Date d'échéance</p>
+      </div>
+    </div>
+
+    <!-- Comparaison avancement réel vs théorique -->
+    <div class="space-y-2 mb-3">
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs font-semibold text-gray-600">Avancement réel (travaux)</span>
+          <span class="text-xs font-black" style="color:${statusColor}">${globalPct.toFixed(1)}%</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${globalPct}%;background:${statusColor}"></div></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs font-semibold text-gray-600">Avancement théorique (temps écoulé)</span>
+          <span class="text-xs font-black text-gray-500">${timePct.toFixed(1)}%</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${timePct}%;background:#9ca3af"></div></div>
+      </div>
+    </div>`;
+
+  if(remainingDays>0 && cadences.length){
+    html += `<div class="rounded-xl overflow-hidden border" style="border-color:var(--srm-border)">
+      <div class="px-3 py-2" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+        <p class="text-xs font-bold text-white"><i class="fa-solid fa-gauge-high mr-1"></i>Cadence quotidienne requise pour respecter le délai</p>
+      </div>
+      <table class="w-full text-xs">
+        <thead><tr style="background:var(--srm-gray)">
+          <th class="p-2 text-left font-semibold text-gray-500">Phase</th>
+          <th class="p-2 font-semibold text-gray-500">Quantité restante</th>
+          <th class="p-2 font-semibold text-gray-500">Cadence / jour requise</th>
+        </tr></thead><tbody>`;
+    cadences.forEach((cd,i)=>{
+      const cadenceJour = cd.restant / remainingDaysSafe;
+      const bg = i%2===0 ? '' : 'background:#f7f9ff';
+      html += `<tr style="${bg}">
+        <td class="p-2 font-bold" style="color:var(--srm-text)">${cd.name}</td>
+        <td class="p-2 text-center">${cd.restant.toFixed(2)} ${cd.unit}</td>
+        <td class="p-2 text-center font-black" style="color:#7c3aed">${cadenceJour.toFixed(2)} ${cd.unit}/j</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  } else if(remainingDays<=0){
+    html += `<div class="p-3 rounded-xl text-center text-xs font-bold" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">
+      <i class="fa-solid fa-circle-info mr-1"></i>Aucune cadence calculable : le délai est déjà dépassé.
+    </div>`;
+  }
+
+  content.innerHTML = html;
 }
 function getAggregatedCumuls(){
   let res={'75':0,'90':0,'110':0,'160':0,'225':0,'315':0},branch={DN32:0,DN50:0},remise={'Chaussée':0,'Pavé':0,'Carrelage O':0,'Carrelage S':0,'Béton':0,'Asphalte N':0},service={j32:0,c1_32:0,c2_32:0,c3_32:0,j50:0,c1_50:0,c2_50:0,c3_50:0},vannes={v150:0,v300:0},racc={r200:0,r300:0};
@@ -1618,6 +1762,42 @@ function openStatsPdfModal(){
 }
 function closeStatsPdfModal(){
   document.getElementById('stats-pdf-modal').style.display = 'none';
+}
+
+// ════ QUICK PERIOD PRESETS ════
+function setStatsPeriod(kind){
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  let from, to;
+
+  if(kind === 'week'){
+    // Monday -> Sunday of current week
+    const day = today.getDay(); // 0=Sun..6=Sat
+    const diffToMon = (day === 0 ? -6 : 1 - day);
+    const mon = new Date(today); mon.setDate(today.getDate() + diffToMon);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    from = fmt(mon); to = fmt(sun);
+  } else if(kind === 'month'){
+    from = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+    to   = fmt(new Date(today.getFullYear(), today.getMonth()+1, 0));
+  } else if(kind === 'lastmonth'){
+    from = fmt(new Date(today.getFullYear(), today.getMonth()-1, 1));
+    to   = fmt(new Date(today.getFullYear(), today.getMonth(), 0));
+  } else if(kind === 'quarter'){
+    const q = Math.floor(today.getMonth()/3);
+    from = fmt(new Date(today.getFullYear(), q*3, 1));
+    to   = fmt(new Date(today.getFullYear(), q*3+3, 0));
+  } else if(kind === 'year'){
+    from = fmt(new Date(today.getFullYear(), 0, 1));
+    to   = fmt(new Date(today.getFullYear(), 11, 31));
+  } else if(kind === 'all'){
+    const dates = records.map(r=>r.dateStr).filter(Boolean).sort();
+    if(dates.length){ from = dates[0]; to = dates[dates.length-1]; }
+    else { from = fmt(today); to = fmt(today); }
+  }
+
+  document.getElementById('stats-date-from').value = from;
+  document.getElementById('stats-date-to').value   = to;
 }
 
 // ════ FILTERED CUMULS (for a date range) ════
@@ -2122,6 +2302,7 @@ function mpDestroyChart(id){
 const MP_COLORS = ['#2B7FC1','#4DB05B','#E8823E','#7c3aed','#0891b2','#be185d','#d97706','#059669'];
 
 function mpRenderCharts(results){
+  if(typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
   const labels = results.map(r => r.name.length > 15 ? r.name.substring(0,15)+'…' : r.name);
   const colors = labels.map((_,i) => MP_COLORS[i % MP_COLORS.length]);
 
@@ -2136,7 +2317,19 @@ function mpRenderCharts(results){
         {label:'Objectif (100%)',data:results.map(()=>100),backgroundColor:'rgba(0,0,0,0.05)',borderRadius:6}
       ]
     },
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x+'%'}}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:10}}}}}
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>c.parsed.x+'%'}},
+        datalabels:{
+          display:c=>c.datasetIndex===0,
+          color:'#fff',
+          font:{weight:'bold',size:10},
+          anchor:'end',align:'start',
+          formatter:v=>v+'%'
+        }
+      },
+      scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:10}}}}}
   });
 
   // 2. Réseau linéaire
@@ -2150,7 +2343,18 @@ function mpRenderCharts(results){
         {label:'Objectif (m)',data:results.map(r=>r.targets.linearReseau),backgroundColor:'rgba(43,127,193,0.15)',borderRadius:6,borderColor:'rgba(43,127,193,0.5)',borderWidth:1}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{y:{ticks:{font:{size:10}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:9}}},
+        datalabels:{
+          display:c=>c.dataset.data[c.dataIndex]>0,
+          color:c=>c.datasetIndex===0?'#fff':'#2B7FC1',
+          font:{weight:'bold',size:9},
+          anchor:'end',align:c=>c.datasetIndex===0?'start':'end',
+          formatter:v=>v+'m'
+        }
+      },
+      scales:{y:{ticks:{font:{size:10}}}}}
   });
 
   // 3. Branchements
@@ -2165,7 +2369,18 @@ function mpRenderCharts(results){
         {label:'Objectif',data:results.map(r=>r.targets.branchements),backgroundColor:'rgba(0,0,0,0.06)',borderRadius:4,borderColor:'rgba(77,176,91,0.5)',borderWidth:1}
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{y:{stacked:false,ticks:{font:{size:10}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:9}}},
+        datalabels:{
+          display:c=>c.dataset.data[c.dataIndex]>0,
+          color:c=>c.datasetIndex===2?'#4DB05B':'#fff',
+          font:{weight:'bold',size:9},
+          anchor:'end',align:c=>c.datasetIndex===2?'end':'center',
+          formatter:v=>v+'u'
+        }
+      },
+      scales:{y:{stacked:false,ticks:{font:{size:10}}}}}
   });
 
   // 4. Remise en état
@@ -2176,7 +2391,18 @@ function mpRenderCharts(results){
       labels,
       datasets:[{label:'Remise en état (m)',data:results.map(r=>r.avt.tRem.toFixed(1)),backgroundColor:colors.map(c=>c+'bb'),borderRadius:6}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{size:10}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:c=>c.dataset.data[c.dataIndex]>0,
+          color:'#fff',
+          font:{weight:'bold',size:10},
+          anchor:'end',align:'start',
+          formatter:v=>v+'m'
+        }
+      },
+      scales:{y:{ticks:{font:{size:10}}}}}
   });
 
   // 5. DN distribution donut
@@ -2186,7 +2412,20 @@ function mpRenderCharts(results){
   mpCharts['dn-donut'] = new Chart(document.getElementById('chart-dn-donut'), {
     type:'doughnut',
     data:{labels:dnLabels,datasets:[{data:dnTotals,backgroundColor:['#2B7FC1','#4DB05B','#E8823E','#7c3aed','#0891b2','#be185d'],hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}},
+        datalabels:{
+          display:c=>c.dataset.data[c.dataIndex]>0,
+          color:'#fff',
+          font:{weight:'bold',size:9},
+          formatter:(v,ctx)=>{
+            const total=ctx.dataset.data.reduce((a,b)=>a+parseFloat(b),0);
+            const pct=total>0?(v/total*100):0;
+            return v.toFixed(0)+'m\n('+pct.toFixed(0)+'%)';
+          }
+        }
+      }}
   });
 
   // 6. Timeline — cumulative production per project
@@ -2204,7 +2443,12 @@ function mpRenderCharts(results){
   mpCharts['timeline'] = new Chart(document.getElementById('chart-timeline'), {
     type:'line',
     data:{labels:allDates,datasets:timelineDatasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:9}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}},
+        datalabels:{display:false}
+      },
+      scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:9}}}}}
   });
 }
 
@@ -2582,7 +2826,30 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
       </div>
       <button onclick="closeStatsPdfModal()" class="text-gray-400 hover:text-red-500 transition-colors text-lg"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <p class="text-xs text-gray-500 mb-4">Sélectionnez la plage de dates pour extraire les statistiques cumulées de la période choisie.</p>
+    <p class="text-xs text-gray-500 mb-3">Sélectionnez la plage de dates pour extraire les statistiques cumulées de la période choisie.</p>
+
+    <!-- Quick presets -->
+    <div class="grid grid-cols-3 gap-2 mb-4">
+      <button onclick="setStatsPeriod('week')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-calendar-week mr-1"></i>Cette semaine
+      </button>
+      <button onclick="setStatsPeriod('month')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-calendar-days mr-1"></i>Ce mois
+      </button>
+      <button onclick="setStatsPeriod('lastmonth')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-rotate-left mr-1"></i>Mois dernier
+      </button>
+      <button onclick="setStatsPeriod('quarter')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-calendar mr-1"></i>Trimestre
+      </button>
+      <button onclick="setStatsPeriod('year')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-calendar-check mr-1"></i>Cette année
+      </button>
+      <button onclick="setStatsPeriod('all')" class="px-2 py-2 rounded-lg text-xs font-bold border transition-colors hover:bg-purple-50" style="border-color:var(--srm-border);color:#7c3aed;">
+        <i class="fa-solid fa-infinity mr-1"></i>Tout
+      </button>
+    </div>
+
     <div class="grid grid-cols-2 gap-3 mb-4">
       <div>
         <label class="block text-xs font-bold mb-1.5 text-gray-600"><i class="fa-solid fa-calendar-day mr-1" style="color:var(--srm-blue)"></i>Date de début</label>
