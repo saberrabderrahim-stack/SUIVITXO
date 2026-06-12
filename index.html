@@ -2425,6 +2425,147 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
   });
 
   ftr(2);
+
+  // PAGE 3+ — CHARTS (capture des graphiques de l'interface)
+  const chartIds = [
+    {id:'chart-avancement', title:'AVANCEMENT GLOBAL PAR PROJET (%)'},
+    {id:'chart-reseau',     title:'RÉSEAU LINÉAIRE POSÉ (m) PAR PROJET'},
+    {id:'chart-branch',     title:'BRANCHEMENTS RÉALISÉS (u) PAR PROJET'},
+    {id:'chart-remise',     title:'REMISE EN ÉTAT (m) PAR PROJET'},
+    {id:'chart-dn-donut',   title:'RÉPARTITION LINÉAIRE PAR DIAMÈTRE (TOUS PROJETS)'},
+    {id:'chart-timeline',   title:'PRODUCTION LINÉAIRE CUMULÉE DANS LE TEMPS'}
+  ];
+
+  doc.addPage(); hdr();
+  doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+  doc.text('GRAPHIQUES — VUE D\\'ENSEMBLE CONSOLIDATION',pW/2,24.8,{align:'center'});
+  doc.setTextColor(DK[0],DK[1],DK[2]);
+
+  const chW = (pW-28-10)/2;
+  const chH = chW * 0.62;
+  let cx = 14, cy = 30, col2 = false;
+  let pageNum = 3;
+
+  chartIds.forEach((cInfo, idx) => {
+    const chartObj = mpCharts[cInfo.id.replace('chart-','')];
+    let imgData = null;
+    try{
+      if(chartObj && chartObj.canvas){
+        imgData = chartObj.canvas.toDataURL('image/png', 1.0);
+      }
+    }catch(e){ console.error('Chart capture error', cInfo.id, e); }
+
+    if(cy + chH + 10 > pH - 12){
+      ftr(pageNum);
+      doc.addPage(); hdr();
+      doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+      doc.text('GRAPHIQUES — VUE D\\'ENSEMBLE CONSOLIDATION (suite)',pW/2,24.8,{align:'center'});
+      doc.setTextColor(DK[0],DK[1],DK[2]);
+      cy = 30; cx = 14; col2 = false; pageNum++;
+    }
+
+    // Chart box
+    doc.setFillColor(GR[0],GR[1],GR[2]); doc.roundedRect(cx,cy,chW,6,1,1,'F');
+    doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(PU[0],PU[1],PU[2]);
+    doc.text(cInfo.title,cx+2,cy+4.2);
+    doc.setTextColor(DK[0],DK[1],DK[2]);
+
+    doc.setDrawColor(220,228,238); doc.setLineWidth(0.3);
+    doc.roundedRect(cx,cy+7,chW,chH,1,1);
+    if(imgData){
+      try{ doc.addImage(imgData,'PNG',cx+1,cy+8,chW-2,chH-2); }
+      catch(e){
+        doc.setFontSize(7); doc.setTextColor(180,180,180);
+        doc.text('Graphique indisponible',cx+chW/2,cy+7+chH/2,{align:'center'});
+      }
+    } else {
+      doc.setFontSize(7); doc.setTextColor(180,180,180);
+      doc.text('Graphique indisponible',cx+chW/2,cy+7+chH/2,{align:'center'});
+    }
+
+    if(!col2){ cx = 14+chW+10; col2 = true; }
+    else { cx = 14; col2 = false; cy += chH+12; }
+  });
+
+  ftr(pageNum);
+
+  // PAGE FINALE — Répartition par diamètre (tableau détaillé, comme le donut)
+  doc.addPage(); pageNum++; hdr();
+  doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
+  doc.text('DÉTAIL — RÉPARTITION DU RÉSEAU PAR DIAMÈTRE ET PAR PROJET',pW/2,24.8,{align:'center'});
+  doc.setTextColor(DK[0],DK[1],DK[2]);
+  Y = 30;
+
+  const dnKeys = ['75','90','110','160','225','315'];
+  const dnHead = ['Projet', ...dnKeys.map(d=>'DN '+d+' (m)'), 'Total (m)'];
+  const dnBody = results.map(r => {
+    const row = [r.name.substring(0,30)];
+    let tot = 0;
+    dnKeys.forEach(d => { const v = r.cumuls.reseau[d]||0; tot+=v; row.push(v.toFixed(2)); });
+    row.push(tot.toFixed(2));
+    return row;
+  });
+  // Total row
+  const dnTotalRow = ['TOTAL TOUS PROJETS'];
+  let grandTot = 0;
+  dnKeys.forEach(d => {
+    const s = results.reduce((acc,r)=>acc+(r.cumuls.reseau[d]||0),0);
+    grandTot += s;
+    dnTotalRow.push(s.toFixed(2));
+  });
+  dnTotalRow.push(grandTot.toFixed(2));
+  dnBody.push(dnTotalRow);
+
+  doc.autoTable({
+    head:[dnHead], body:dnBody, startY:Y,
+    styles:{fontSize:7,cellPadding:2,halign:'center'},
+    headStyles:{fillColor:PU,textColor:[255,255,255],fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[247,251,255]},
+    columnStyles:{0:{halign:'left',fontStyle:'bold'}, [dnKeys.length+1]:{fontStyle:'bold',textColor:PU}},
+    didParseCell:function(d){
+      if(d.row.index===dnBody.length-1){ d.cell.styles.fillColor=LB; d.cell.styles.fontStyle='bold'; d.cell.styles.textColor=PU; }
+    },
+    margin:{left:14,right:14},tableWidth:pW-28
+  });
+  Y = doc.lastAutoTable.finalY+5;
+
+  // Production timeline table (cumulative per date, per project) - condensed
+  const allDates = [...new Set(results.flatMap(r=>r.records.map(rec=>rec.dateStr)).filter(Boolean))].sort();
+  if(allDates.length){
+    doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont(undefined,'bold');
+    doc.text('PRODUCTION LINÉAIRE CUMULÉE — DERNIERS POINTS DE LA CHRONOLOGIE',16,Y+4.2);
+    doc.setTextColor(DK[0],DK[1],DK[2]); Y+=8;
+
+    // Show last 10 dates max to keep it readable
+    const sampleDates = allDates.length>10 ? allDates.filter((_,i)=>i%Math.ceil(allDates.length/10)===0 || i===allDates.length-1) : allDates;
+    const tlHead = ['Projet', ...sampleDates.map(d=>d.split('-').reverse().slice(0,2).join('/'))];
+    const tlBody = results.map(r => {
+      const row=[r.name.substring(0,25)];
+      let cum=0;
+      const cumByDate={};
+      allDates.forEach(d=>{
+        const dayRec=r.records.filter(rec=>rec.dateStr===d&&rec.category==='Réseau');
+        cum+=dayRec.reduce((s,rec)=>s+(rec.distance||0),0);
+        cumByDate[d]=cum;
+      });
+      sampleDates.forEach(d=>row.push(cumByDate[d].toFixed(1)));
+      return row;
+    });
+    doc.autoTable({
+      head:[tlHead], body:tlBody, startY:Y,
+      styles:{fontSize:6,cellPadding:1.5,halign:'center'},
+      headStyles:{fillColor:PU,textColor:[255,255,255],fontStyle:'bold',fontSize:6},
+      alternateRowStyles:{fillColor:[247,251,255]},
+      columnStyles:{0:{halign:'left',fontStyle:'bold',cellWidth:35}},
+      margin:{left:14,right:14},tableWidth:pW-28
+    });
+  }
+
+  ftr(pageNum);
   doc.save('CONSOLIDATION_MULTI_PROJETS_'+dateStr.replace(/\//g,'-')+'.pdf');
   showToast('Rapport PDF Consolidation exporté !');
 }
