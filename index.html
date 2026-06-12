@@ -2439,7 +2439,7 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
   doc.addPage(); hdr();
   doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
   doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
-  doc.text('GRAPHIQUES — VUE D\\'ENSEMBLE CONSOLIDATION',pW/2,24.8,{align:'center'});
+  doc.text('GRAPHIQUES — VUE D ENSEMBLE CONSOLIDATION',pW/2,24.8,{align:'center'});
   doc.setTextColor(DK[0],DK[1],DK[2]);
 
   const chW = (pW-28-10)/2;
@@ -2461,7 +2461,7 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
       doc.addPage(); hdr();
       doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,20,pW-28,7,2,2,'F');
       doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont(undefined,'bold');
-      doc.text('GRAPHIQUES — VUE D\\'ENSEMBLE CONSOLIDATION (suite)',pW/2,24.8,{align:'center'});
+      doc.text('GRAPHIQUES — VUE D ENSEMBLE CONSOLIDATION (suite)',pW/2,24.8,{align:'center'});
       doc.setTextColor(DK[0],DK[1],DK[2]);
       cy = 30; cx = 14; col2 = false; pageNum++;
     }
