@@ -276,6 +276,31 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
         </div>
       </div>
 
+      <!-- AVANCEMENT FINANCIÈRE -->
+      <div id="finance-section" class="pt-3 border-t space-y-3" style="border-color:var(--srm-border)">
+        <p class="text-[10px] font-bold uppercase tracking-wider" style="color:var(--srm-text)"><i class="fa-solid fa-sack-dollar mr-1" style="color:#b45309"></i>Avancement Financière</p>
+
+        <!-- Stat cards: today + total (empilées, même style que les cartes Production) -->
+        <div class="grid grid-cols-1 gap-3" id="finance-stat-cards">
+          <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#fef3c7;border:1px solid #fde68a">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#d97706;color:#fff"><i class="fa-solid fa-calendar-day text-sm"></i></div>
+            <div>
+              <p class="text-[10px] font-semibold text-gray-500">Consommation Aujourd'hui</p>
+              <p><span id="finance-today-val" class="text-2xl font-black" style="color:#92400e">0.00</span><span class="text-sm font-semibold ml-1" style="color:#d97706">DH</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#fff7ed;border:1px solid #fed7aa">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#b45309;color:#fff"><i class="fa-solid fa-chart-line text-sm"></i></div>
+            <div>
+              <p class="text-[10px] font-semibold text-gray-500">Total Consommé (Budget)</p>
+              <p><span id="finance-total-val" class="text-2xl font-black" style="color:#7c2d12">0.00</span><span class="text-sm font-semibold ml-1" style="color:#b45309">DH</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="finance-bars-container" class="space-y-2"></div>
+      </div>
+
       <!-- DÉLAI ANALYSIS -->
       <div id="delai-section" class="pt-3 border-t space-y-2 hidden" style="border-color:var(--srm-border)">
         <p class="text-[10px] font-bold uppercase tracking-wider" style="color:var(--srm-text)"><i class="fa-solid fa-hourglass-half mr-1" style="color:#7c3aed"></i>Analyse du Délai Contractuel</p>
@@ -605,6 +630,75 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
           </div>
         </div>
       </div>
+
+      <!-- 7. BUDGET -->
+      <div class="srm-card overflow-hidden">
+        <button onclick="toggleSection('budget-content')" class="accordion-btn w-full flex justify-between items-center p-3.5 text-left">
+          <span class="flex items-center gap-2 font-bold text-sm" style="color:var(--srm-text)">
+            <span class="section-header-icon" style="background:#fef3c7;color:#b45309"><i class="fa-solid fa-coins"></i></span>
+            7 — Budget
+          </span>
+          <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform" id="budget-content-icon"></i>
+        </button>
+        <div id="budget-content" class="accordion-content">
+          <form onsubmit="handleBudgetFormSubmit(event)" class="p-4 border-t space-y-3" style="border-color:var(--srm-border)">
+            <input type="hidden" class="budget-record-id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold mb-1.5 text-gray-600">Commande N° <span class="text-red-500">*</span></label>
+                <input type="text" required class="field-budget-commande srm-input">
+              </div>
+              <div>
+                <label class="block text-xs font-bold mb-2 text-gray-600">Phase <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center justify-center p-2.5 border rounded-xl cursor-pointer text-xs font-bold hover:bg-amber-50 transition-colors" style="border-color:#fde68a;color:#b45309"><input type="radio" name="budget-phase" value="Réseau" required class="mr-1.5"> Réseau</label>
+                  <label class="flex items-center justify-center p-2.5 border rounded-xl cursor-pointer text-xs font-bold hover:bg-amber-50 transition-colors" style="border-color:#fde68a;color:#b45309"><input type="radio" name="budget-phase" value="Branchements" class="mr-1.5"> Branchements</label>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold mb-1.5 text-gray-600">Date de décompte <span class="text-red-500">*</span></label>
+                <input type="date" required class="field-budget-date srm-input">
+              </div>
+              <div>
+                <label class="block text-xs font-bold mb-1.5 text-gray-600">Valeur de décompte (DH) <span class="text-red-500">*</span></label>
+                <input type="number" step="0.01" required class="field-budget-valeur srm-input font-mono-custom" placeholder="0.00">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold mb-1.5 text-gray-600">Observation</label>
+                <select onchange="handleObservationChange(this)" class="field-notes-select srm-input observation-dropdown"></select>
+              </div>
+              <div class="hidden custom-notes-box">
+                <label class="block text-xs font-bold mb-1.5" style="color:var(--srm-blue)">Préciser l'observation</label>
+                <input type="text" class="field-notes-custom srm-input" placeholder="Détailler ici...">
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" onclick="cancelBudgetEdit(this)" class="btn-budget-cancel hidden px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 border hover:bg-gray-100" style="border-color:var(--srm-border)">Annuler</button>
+              <button type="submit" class="btn-budget-submit srm-btn-primary" style="background:linear-gradient(135deg,#d97706,#b45309);"><i class="fa-solid fa-plus"></i> <span>Ajouter</span></button>
+            </div>
+          </form>
+          <div id="budget-table-wrap" class="overflow-x-auto border-t" style="border-color:var(--srm-border)">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b uppercase font-black" style="background:var(--srm-gray);border-color:var(--srm-border);color:var(--srm-text-muted)">
+                  <th class="p-2.5">Commande N°</th>
+                  <th class="p-2.5">Phase</th>
+                  <th class="p-2.5">Date</th>
+                  <th class="p-2.5">Valeur (DH)</th>
+                  <th class="p-2.5">Observation</th>
+                  <th class="p-2.5 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="budget-table-body"></tbody>
+            </table>
+            <div id="budget-no-data-msg" class="text-center py-6 text-gray-400 text-xs hidden"><i class="fa-regular fa-circle-question block text-2xl mb-1.5 text-gray-300"></i>Aucun décompte enregistré.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══ REGISTRE DES ACTIVITÉS ═══ -->
@@ -706,8 +800,18 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
             <i class="fa-regular fa-file-pdf"></i> Rapport PDF Consolidé
           </button>
         </div>
-        <div id="mp-kpi-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+        <div id="mp-kpi-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
         <div id="mp-progress-bars" class="space-y-3"></div>
+      </div>
+
+      <!-- FINANCE / BUDGET SUMMARY -->
+      <div id="mp-finance-card" class="srm-card p-4 hidden">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="section-header-icon" style="background:#fef3c7;color:#b45309;"><i class="fa-solid fa-sack-dollar"></i></span>
+          <h3 class="text-sm font-black uppercase tracking-wider" style="color:var(--srm-text)">Analyse Financière Consolidée</h3>
+        </div>
+        <div id="mp-finance-total" class="mb-4"></div>
+        <div id="mp-budget-bars" class="space-y-3"></div>
       </div>
 
       <!-- CHARTS ROW 1 -->
@@ -746,6 +850,18 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
         </div>
       </div>
 
+      <!-- CHARTS ROW 4 — BUDGET -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-sack-dollar mr-1" style="color:#d97706"></i>Budget consommé vs cible par projet (DH)</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-budget"></canvas></div>
+        </div>
+        <div class="srm-card p-4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--srm-text)"><i class="fa-solid fa-chart-pie mr-1" style="color:#d97706"></i>Répartition du budget consommé (Réseau / Branchements)</p>
+          <div style="position:relative;height:220px;"><canvas id="chart-budget-phase"></canvas></div>
+        </div>
+      </div>
+
       <!-- DETAILED TABLE -->
       <div class="srm-card p-4">
         <div class="flex items-center gap-2 mb-4">
@@ -768,6 +884,10 @@ input,select,textarea { font-size:16px!important; font-family:'Cairo',sans-serif
                 <th class="p-2.5 font-bold">Vannes (u)</th>
                 <th class="p-2.5 font-bold">Avt. Global</th>
                 <th class="p-2.5 font-bold">Jours actifs</th>
+                <th class="p-2.5 font-bold">Budget Consommé (DH)</th>
+                <th class="p-2.5 font-bold">Budget Cible (DH)</th>
+                <th class="p-2.5 font-bold">% Budget</th>
+                <th class="p-2.5 font-bold">Coût / m (DH)</th>
               </tr>
             </thead>
             <tbody id="mp-detail-tbody"></tbody>
@@ -795,10 +915,11 @@ const LOGO_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARcAAAC0CAMAAACJ
 let records = JSON.parse(localStorage.getItem('water_project_records')) || [];
 if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 let capturedPhotos = JSON.parse(localStorage.getItem('water_project_photos')) || [];
+let budgetEntries = JSON.parse(localStorage.getItem('water_project_budget')) || [];
 let autoCapturedLocation = { text:"Non disponible", mapsUrl:"" };
 let loadedFileName = null;
 let currentUser = null;
-let projectTargets = { linearReseau:0, branchements:0, remiseEtat:0, raccordements:0, delaiMois:0 };
+let projectTargets = { linearReseau:0, branchements:0, remiseEtat:0, raccordements:0, delaiMois:0, budgetReseau:0, budgetBranchements:0 };
 window._pTargets = projectTargets;
 
 const USERS = {
@@ -922,6 +1043,8 @@ function importPreviousExcel(event){
         projectTargets.remiseEtat=parseFloat(ts[3]?ts[3][1]:0)||0;
         projectTargets.raccordements=parseFloat(ts[4]?ts[4][1]:0)||0;
         projectTargets.delaiMois=parseFloat(ts[5]?ts[5][1]:0)||0;
+        projectTargets.budgetReseau=parseFloat(ts[6]?ts[6][1]:0)||0;
+        projectTargets.budgetBranchements=parseFloat(ts[7]?ts[7][1]:0)||0;
         window._pTargets=projectTargets;
       }
       const sn=wb.SheetNames.includes("Registre Général")?"Registre Général":wb.SheetNames[0];
@@ -1146,7 +1269,9 @@ function buildWorkbook(){
     ["Nombre total de branchements à réaliser (u)",projectTargets.branchements],
     ["Linéaire total de remise en état (m)",projectTargets.remiseEtat],
     ["Nombre de raccordements à réaliser (u)",projectTargets.raccordements],
-    ["Délai d'exécution (mois)",projectTargets.delaiMois]
+    ["Délai d'exécution (mois)",projectTargets.delaiMois],
+    ["Budget Réseau (DH)",projectTargets.budgetReseau||0],
+    ["Budget Branchements (DH)",projectTargets.budgetBranchements||0]
   ];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(tRows),"total à réaliser");
 
@@ -1175,6 +1300,27 @@ function buildWorkbook(){
     };
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detRows),"Détails par Élément");
+
+  // SHEET 5: Budget (décomptes individuels)
+  const budgetSorted=[...budgetEntries].sort((a,b)=>a.date.localeCompare(b.date));
+  const fin=computeBudgetAnalysis();
+  const budgetRows=budgetSorted.map(b=>({
+    'N° Commande':b.commande,
+    'Phase':b.phase,
+    'Date':b.date,
+    'Valeur (DH)':b.valeur
+  }));
+  const wsBudget=XLSX.utils.json_to_sheet(budgetRows.length?budgetRows:[{'N° Commande':'','Phase':'','Date':'','Valeur (DH)':''}]);
+  XLSX.utils.sheet_add_aoa(wsBudget,[
+    [],[],
+    ["════ SYNTHÈSE BUDGET ════"],
+    ["Budget Réseau (DH)",fin.budR,"Consommé Réseau (DH)",fin.consReseau.toFixed(2)],
+    ["Budget Branchements (DH)",fin.budB,"Consommé Branchements (DH)",fin.consBranch.toFixed(2)],
+    ["Budget Total (DH)",fin.totalBudget,"Consommé Total (DH)",fin.totalConsomme.toFixed(2)],
+    ["% Consommé",fin.pctTotal.toFixed(2)+"%"]
+  ],{origin:-1});
+  XLSX.utils.book_append_sheet(wb,wsBudget,"Budget");
+
   return wb;
 }
 
@@ -1405,6 +1551,81 @@ async function _doPDF(qrDataUrl){
   const vPh=phases.filter(ph=>parseFloat(ph.t)>0);
   const gPct=vPh.length?vPh.reduce((s,ph)=>s+ph.p,0)/vPh.length:0;
 
+  // ════ CONCLUSION (bas de page 1, ancré en bas) ════
+  {
+    const _pctFmt=(v,t)=>t>0?Math.min(100,(v/t*100)).toFixed(0)+'%':'—';
+    const now2=new Date();
+    const _dn=now2.toLocaleDateString('fr-FR'), _tn=now2.toLocaleTimeString('fr-FR');
+    const conclW=pW-28;
+    const TH=6, IH=8, SH=4, RH1=4.5, RH2=4, PAD=3;
+    const conclH=TH+1+IH+1+SH+RH1+RH2+PAD;
+    const conclY=yL+4;
+    // Titre
+    doc.setFillColor(...B);doc.roundedRect(14,conclY,conclW,TH,1.5,1.5,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont(undefined,'bold');
+    doc.text('CONCLUSION',16,conclY+4.2);
+    // Bloc fond
+    const blkY=conclY+TH+1;
+    const blkH=conclH-TH-1;
+    doc.setFillColor(245,248,252);doc.roundedRect(14,blkY,conclW,blkH,1,1,'F');
+    doc.setDrawColor(...B);doc.setLineWidth(0.2);doc.roundedRect(14,blkY,conclW,blkH,1,1,'D');
+    doc.setFillColor(...B);doc.roundedRect(14,blkY,2,blkH,1,0,'F');
+    const lx2=20, col2x2=lx2+(conclW-6)/2;
+    // Info ligne 1
+    doc.setFontSize(6);doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Projet :',lx2,blkY+5);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(doc.splitTextToSize(proj,(conclW-6)/2-22)[0],lx2+17,blkY+5);
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Etabli par :',col2x2,blkY+5);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(currentUser?(USERS[currentUser]?.displayName||currentUser):'—',col2x2+20,blkY+5);
+    // Info ligne 2
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Export :',lx2,blkY+5+IH/2+2);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(_dn+' '+_tn,lx2+17,blkY+5+IH/2+2);
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Début projet :',col2x2,blkY+5+IH/2+2);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text((document.getElementById('project-start-date').value||'—'),col2x2+24,blkY+5+IH/2+2);
+    // Séparateur
+    const sepY=blkY+IH+1;
+    doc.setDrawColor(200,215,230);doc.setLineWidth(0.15);doc.line(lx2,sepY,pW-16,sepY);
+    // Sous-titre
+    doc.setFont(undefined,'bold');doc.setFontSize(6);doc.setTextColor(...B);
+    doc.text('Statistiques globales cumulées',lx2,sepY+SH);
+    // Tableau 4 colonnes dessiné manuellement (2 lignes : valeur + %)
+    const cols=[
+      {lbl:'Réseau posé',   val:tL.toFixed(0)+' m / '+projectTargets.linearReseau+' m',  pct:_pctFmt(tL,projectTargets.linearReseau),  col:B},
+      {lbl:'Branchements',  val:tB+' u / '+projectTargets.branchements+' u',               pct:_pctFmt(tB,projectTargets.branchements),   col:G},
+      {lbl:'Remise en état',val:tRem.toFixed(0)+' m / '+projectTargets.remiseEtat+' m',  pct:_pctFmt(tRem,projectTargets.remiseEtat),  col:O},
+      {lbl:'Raccordements', val:tRac+' u / '+projectTargets.raccordements+' u',            pct:_pctFmt(tRac,projectTargets.raccordements),col:[99,60,180]}
+    ];
+    const tblX=16, tblW=conclW-4, cW=tblW/4;
+    const tblY=sepY+SH+1;
+    cols.forEach((c,i)=>{
+      const cx=tblX+i*cW;
+      // header
+      doc.setFillColor(...c.col);doc.rect(cx,tblY,cW,RH1,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(5.5);doc.setFont(undefined,'bold');
+      doc.text(c.lbl,cx+cW/2,tblY+RH1/2+1,{align:'center'});
+      // row1 valeur
+      doc.setFillColor(255,255,255);doc.rect(cx,tblY+RH1,cW,RH1,'F');
+      doc.setTextColor(30,45,61);doc.setFontSize(5.8);doc.setFont(undefined,'bold');
+      doc.text(c.val,cx+cW/2,tblY+RH1+RH1/2+1,{align:'center'});
+      // row2 pct
+      doc.setFillColor(248,250,253);doc.rect(cx,tblY+RH1*2,cW,RH2,'F');
+      doc.setTextColor(...c.col);doc.setFontSize(6);doc.setFont(undefined,'bold');
+      doc.text(c.pct,cx+cW/2,tblY+RH1*2+RH2/2+1.5,{align:'center'});
+      // bordures
+      doc.setDrawColor(220,228,238);doc.setLineWidth(0.15);
+      doc.rect(cx,tblY,cW,RH1+RH1+RH2,'D');
+    });
+    // ligne séparatrice verticale entre colonnes
+    doc.setTextColor(...DARK);
+  }
+
   // ── Signatures (helper, drawn on page 2) ──
   const bWs=83,bHs=30,sG=7,sX1=14,sX2=14+bWs+sG;
   function sigBox(x,y,title,sub){
@@ -1431,27 +1652,52 @@ async function _doPDF(qrDataUrl){
 
     doc.setFillColor(124,58,237);doc.roundedRect(14,20,pW-28,7,2,2,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(8.5);doc.setFont(undefined,'bold');
-    doc.text('ANALYSE DU DÉLAI CONTRACTUEL',pW/2,25,{align:'center'});
+    doc.text('ANALYSE DU DÉLAI CONTRACTUEL & BUDGET',pW/2,25,{align:'center'});
     doc.setTextColor(...DARK);
 
     let Yd=29;
     const fmtDateFR = d => d.toLocaleDateString('fr-FR');
 
+    // ── Facteur d'échelle : adapte tout le contenu à l'espace entre le titre et les signatures ──
+    const _bHsC0=28, _sGap0=2, _bMargin0=8;
+    const _availH = (pH - _bMargin0 - _bHsC0 - _sGap0) - Yd;
+    const _finEst = computeBudgetAnalysis();
+    const _nPhasesShown = phases.filter(ph=>parseFloat(ph.t)!==0).length;
+    let _estH = 19;               // bandeau de statut (13+6)
+    _estH += 22;                  // cartes KPI (16+6)
+    _estH += 9;                   // entête "avancement par phase"
+    _estH += _nPhasesShown*15.5;  // par phase : barre réelle + barre théorique
+    _estH += 2;
+    _estH += 9 + 11.5 + 16;       // entête + barre réelle + barre théorique (réel vs théorique)
+    if(delaiInfo.remainingDays>0 && delaiInfo.cadences.length){
+      _estH += 8.5 + (delaiInfo.cadences.length+1)*7.4 + 6;
+    } else if(delaiInfo.remainingDays<=0){
+      _estH += 16;
+    }
+    if(_finEst.totalBudget>0){
+      _estH += 9; // entête avancement financière
+      let _nFin=0; if(_finEst.budR>0)_nFin++; if(_finEst.budB>0)_nFin++;
+      _estH += _nFin*11.2;
+      _estH += 9.2 + 2 + 8 + 15; // budget total consommé + théorique + valeur théorique mensuelle
+    }
+    const SC = Math.max(0.6, Math.min(1, _availH/_estH));
+    const U = v => v*SC;
+
     // Status banner
     const scHex = delaiInfo.statusColor.replace('#','');
     const scRgb = [parseInt(scHex.substring(0,2),16), parseInt(scHex.substring(2,4),16), parseInt(scHex.substring(4,6),16)];
     doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);
-    doc.roundedRect(14,Yd,pW-28,13,2,2,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(9.5);doc.setFont(undefined,'bold');
-    doc.text(delaiInfo.statusBadge,18,Yd+5.5);
-    doc.setFontSize(6.5);doc.setFont(undefined,'normal');
+    doc.roundedRect(14,Yd,pW-28,U(13),2,2,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(Math.max(6,9.5*SC));doc.setFont(undefined,'bold');
+    doc.text(delaiInfo.statusBadge,18,Yd+U(5.5));
+    doc.setFontSize(Math.max(4.5,6.5*SC));doc.setFont(undefined,'normal');
     const msgLines = doc.splitTextToSize(delaiInfo.statusMsg, pW-40);
-    doc.text(msgLines.slice(0,2), 18, Yd+9.5);
+    doc.text(msgLines.slice(0,2), 18, Yd+U(9.5));
     doc.setTextColor(...DARK);
-    Yd += 13 + 6;
+    Yd += U(13) + U(6);
 
     // KPI cards
-    const kpiW=(pW-28-3*3)/4, kpiH=16;
+    const kpiW=(pW-28-3*3)/4, kpiH=U(16);
     const kpis=[
       {val:delaiInfo.delaiMois+' mois', lbl:'Délai contractuel', col:B, bg:LB},
       {val:delaiInfo.elapsedDays+' / '+delaiInfo.totalDays, lbl:'Jours écoulés / total', col:G, bg:[234,247,236]},
@@ -1461,88 +1707,88 @@ async function _doPDF(qrDataUrl){
     kpis.forEach((k,i)=>{
       const x=14+i*(kpiW+3);
       doc.setFillColor(...k.bg);doc.roundedRect(x,Yd,kpiW,kpiH,1.5,1.5,'F');
-      doc.setTextColor(...k.col);doc.setFontSize(9);doc.setFont(undefined,'bold');
-      doc.text(k.val,x+kpiW/2,Yd+6.5,{align:'center'});
-      doc.setFontSize(5.5);doc.setFont(undefined,'normal');doc.setTextColor(100,110,120);
-      doc.text(k.lbl,x+kpiW/2,Yd+12,{align:'center'});
+      doc.setTextColor(...k.col);doc.setFontSize(Math.max(5,9*SC));doc.setFont(undefined,'bold');
+      doc.text(k.val,x+kpiW/2,Yd+U(6.5),{align:'center'});
+      doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(100,110,120);
+      doc.text(k.lbl,x+kpiW/2,Yd+U(12),{align:'center'});
     });
     doc.setTextColor(...DARK);
-    Yd += kpiH + 6;
+    Yd += kpiH + U(6);
 
     // ── AVANCEMENT DU PROJET PAR PHASE (Réel + Théorique réel calculé) ──
-    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(...B);
-    doc.text('AVANCEMENT DU PROJET PAR PHASE',16,Yd+4);
-    doc.setTextColor(...DARK);Yd+=9;
+    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('AVANCEMENT DU PROJET PAR PHASE',16,Yd+U(4));
+    doc.setTextColor(...DARK);Yd+=U(9);
 
-    const pbW=pW-28, pbH=4, pbX=14, pbThW=pbW-13-16;
+    const pbW=pW-28, pbH=U(4), pbX=14, pbThW=pbW-13-16;
     const phaseTheoArr=computePhaseTheoreticalPcts(delaiInfo.totalDays,delaiInfo.elapsedDays);
     phases.forEach((ph,phIdx)=>{
       if(parseFloat(ph.t)===0) return;
       // Réel — pourcentage centré au milieu de la barre
-      doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-      doc.text(ph.n,pbX,Yd+3);
+      doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+      doc.text(ph.n,pbX,Yd+U(3));
       doc.setFont(undefined,'normal');doc.setTextColor(100,120,140);
-      doc.text(ph.d+' / '+ph.t,pW-14,Yd+3,{align:'right'});
-      doc.setFillColor(220,228,238);doc.roundedRect(pbX,Yd+4.2,pbW,pbH,1,1,'F');
+      doc.text(ph.d+' / '+ph.t,pW-14,Yd+U(3),{align:'right'});
+      doc.setFillColor(220,228,238);doc.roundedRect(pbX,Yd+U(4.2),pbW,pbH,1,1,'F');
       const pf=Math.max(0,ph.p/100*pbW);
-      if(pf>0){doc.setFillColor(...ph.c);doc.roundedRect(pbX,Yd+4.2,pf,pbH,1,1,'F');}
+      if(pf>0){doc.setFillColor(...ph.c);doc.roundedRect(pbX,Yd+U(4.2),pf,pbH,1,1,'F');}
       const pC=ph.p>=75?[22,163,74]:ph.p>=50?[217,119,6]:[239,68,68];
       const pTxt=ph.p.toFixed(1)+'%';
-      doc.setFontSize(6);doc.setFont(undefined,'bold');
-      const pCx=pbX+pbW/2, pCy=Yd+4.2+pbH/2;
+      doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');
+      const pCx=pbX+pbW/2, pCy=Yd+U(4.2)+pbH/2;
       doc.setTextColor(...pC);
-      doc.text(pTxt,pCx,pCy+1,{align:'center'});
-      Yd+=4.2+pbH+0.8;
+      doc.text(pTxt,pCx,pCy+U(1),{align:'center'});
+      Yd+=U(4.2)+pbH+U(0.8);
       // Théorique — propre à cette phase (poids de sa quantité cible dans le délai global)
       const phTheo=phaseTheoArr[phIdx]||0;
-      doc.setFontSize(5.5);doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
-      doc.text('Théorique',pbX,Yd+2.6);
-      doc.setFillColor(230,233,238);doc.roundedRect(pbX+13,Yd,pbThW,3,1,1,'F');
+      doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
+      doc.text('Théorique',pbX,Yd+U(2.6));
+      doc.setFillColor(230,233,238);doc.roundedRect(pbX+13,Yd,pbThW,U(3),1,1,'F');
       const tf=Math.max(0,phTheo/100*pbThW);
-      if(tf>0){doc.setFillColor(156,163,175);doc.roundedRect(pbX+13,Yd,tf,3,1,1,'F');}
+      if(tf>0){doc.setFillColor(156,163,175);doc.roundedRect(pbX+13,Yd,tf,U(3),1,1,'F');}
       const tTxt=phTheo.toFixed(1)+'%';
-      doc.setFontSize(4.8);doc.setFont(undefined,'bold');
-      const tCx=pbX+13+pbThW/2, tCy=Yd+1.5;
+      doc.setFontSize(Math.max(3.6,4.8*SC));doc.setFont(undefined,'bold');
+      const tCx=pbX+13+pbThW/2, tCy=Yd+U(1.5);
       doc.setTextColor(120,130,140);
-      doc.text(tTxt,tCx,tCy+0.9,{align:'center'});
+      doc.text(tTxt,tCx,tCy+U(0.9),{align:'center'});
       doc.setTextColor(...DARK);
-      Yd+=6.5;
+      Yd+=U(6.5);
     });
-    Yd+=2;
+    Yd+=U(2);
 
     // Avancement réel vs théorique bars
-    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(...B);
-    doc.text('AVANCEMENT RÉEL vs THÉORIQUE',16,Yd+4);
-    doc.setTextColor(...DARK);Yd+=9;
+    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('AVANCEMENT RÉEL vs THÉORIQUE',16,Yd+U(4));
+    doc.setTextColor(...DARK);Yd+=U(9);
 
-    const dbW=pW-28, dbH=4, dbX=14;
+    const dbW=pW-28, dbH=U(4), dbX=14;
     // Réel
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-    doc.text('Avancement réel (travaux)',dbX,Yd+3);
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+    doc.text('Avancement réel (travaux)',dbX,Yd+U(3));
     doc.setFont(undefined,'normal');doc.setTextColor(...scRgb);
-    doc.text(delaiInfo.globalPct.toFixed(1)+'%',pW-14,Yd+3,{align:'right'});
-    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+4.2,dbW,dbH,1,1,'F');
+    doc.text(delaiInfo.globalPct.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+U(4.2),dbW,dbH,1,1,'F');
     let f1=Math.max(0,delaiInfo.globalPct/100*dbW);
-    if(f1>0){doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);doc.roundedRect(dbX,Yd+4.2,f1,dbH,1,1,'F');}
-    doc.setTextColor(...DARK);Yd+=11.5;
+    if(f1>0){doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);doc.roundedRect(dbX,Yd+U(4.2),f1,dbH,1,1,'F');}
+    doc.setTextColor(...DARK);Yd+=U(11.5);
     // Théorique
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-    doc.text('Avancement théorique (temps écoulé)',dbX,Yd+3);
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+    doc.text('Avancement théorique (temps écoulé)',dbX,Yd+U(3));
     doc.setFont(undefined,'normal');doc.setTextColor(140,150,160);
-    doc.text(delaiInfo.timePct.toFixed(1)+'%',pW-14,Yd+3,{align:'right'});
-    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+4.2,dbW,dbH,1,1,'F');
+    doc.text(delaiInfo.timePct.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+U(4.2),dbW,dbH,1,1,'F');
     let f2=Math.max(0,delaiInfo.timePct/100*dbW);
-    if(f2>0){doc.setFillColor(156,163,175);doc.roundedRect(dbX,Yd+4.2,f2,dbH,1,1,'F');}
-    doc.setTextColor(...DARK);Yd+=16;
+    if(f2>0){doc.setFillColor(156,163,175);doc.roundedRect(dbX,Yd+U(4.2),f2,dbH,1,1,'F');}
+    doc.setTextColor(...DARK);Yd+=U(16);
 
     // Cadences table
     if(delaiInfo.remainingDays>0 && delaiInfo.cadences.length){
-      doc.setFillColor(124,58,237);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-      doc.setTextColor(255,255,255);doc.setFontSize(6.5);doc.setFont(undefined,'bold');
-      doc.text('CADENCE QUOTIDIENNE REQUISE POUR RESPECTER LE DELAI',16,Yd+4);
-      doc.setTextColor(...DARK);Yd+=8.5;
+      doc.setFillColor(124,58,237);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');
+      doc.text('CADENCE QUOTIDIENNE REQUISE POUR RESPECTER LE DELAI',16,Yd+U(4));
+      doc.setTextColor(...DARK);Yd+=U(8.5);
 
       const cadBody = delaiInfo.cadences.map(cd=>[
         cd.name, cd.restant.toFixed(2)+' '+cd.unit, cd.cadenceJour.toFixed(2)+' '+cd.unit+'/jour'
@@ -1550,18 +1796,85 @@ async function _doPDF(qrDataUrl){
       doc.autoTable({
         head:[['Phase','Quantité restante','Cadence/jour requise']],
         body:cadBody, startY:Yd,
-        styles:{fontSize:7.5,cellPadding:2.2,halign:'center'},
-        headStyles:{fillColor:[124,58,237],textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
+        styles:{fontSize:Math.max(5,7.5*SC),cellPadding:U(2.2),halign:'center'},
+        headStyles:{fillColor:[124,58,237],textColor:[255,255,255],fontStyle:'bold',fontSize:Math.max(5,7.5*SC)},
         alternateRowStyles:{fillColor:[247,251,255]},
         columnStyles:{0:{halign:'left',fontStyle:'bold'},2:{fontStyle:'bold',textColor:[124,58,237]}},
         margin:{left:14,right:14},tableWidth:pW-28
       });
-      Yd = doc.lastAutoTable.finalY + 6;
+      Yd = doc.lastAutoTable.finalY + U(6);
     } else if(delaiInfo.remainingDays<=0){
-      doc.setFillColor(254,242,242);doc.roundedRect(14,Yd,pW-28,9,2,2,'F');
-      doc.setTextColor(220,38,38);doc.setFontSize(7.5);doc.setFont(undefined,'bold');
-      doc.text('Aucune cadence calculable : le délai contractuel est déjà dépassé.',pW/2,Yd+5.8,{align:'center'});
-      doc.setTextColor(...DARK);Yd+=16;
+      doc.setFillColor(254,242,242);doc.roundedRect(14,Yd,pW-28,U(9),2,2,'F');
+      doc.setTextColor(220,38,38);doc.setFontSize(Math.max(5,7.5*SC));doc.setFont(undefined,'bold');
+      doc.text('Aucune cadence calculable : le délai contractuel est déjà dépassé.',pW/2,Yd+U(5.8),{align:'center'});
+      doc.setTextColor(...DARK);Yd+=U(16);
+    }
+
+
+    // ── AVANCEMENT FINANCIÈRE ──
+    {
+      const fin=computeBudgetAnalysis();
+      if(fin.totalBudget>0){
+        doc.setFillColor(217,119,6);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+        doc.setTextColor(255,255,255);doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');
+        doc.text('AVANCEMENT FINANCIÈRE',16,Yd+U(4));
+        doc.setTextColor(...DARK);Yd+=U(9);
+
+        const fbW=pW-28, fbH=U(4), fbX=14;
+        const finItems=[
+          {n:'Budget Réseau', d:fin.consReseau.toFixed(2)+' DH', t:fin.budR.toFixed(2)+' DH', p:fin.pctR, c:B, show:fin.budR>0},
+          {n:'Budget Branchements', d:fin.consBranch.toFixed(2)+' DH', t:fin.budB.toFixed(2)+' DH', p:fin.pctB, c:G, show:fin.budB>0}
+        ];
+        finItems.forEach(it=>{
+          if(!it.show)return;
+          doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+          doc.text(it.n,fbX,Yd+U(3));
+          doc.setFont(undefined,'normal');doc.setTextColor(100,120,140);
+          doc.text(it.d+' / '+it.t,pW-14,Yd+U(3),{align:'right'});
+          doc.setFillColor(220,228,238);doc.roundedRect(fbX,Yd+U(4.2),fbW,fbH,1,1,'F');
+          const pf=Math.max(0,it.p/100*fbW);
+          if(pf>0){doc.setFillColor(...it.c);doc.roundedRect(fbX,Yd+U(4.2),pf,fbH,1,1,'F');}
+          doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');doc.setTextColor(...it.c);
+          doc.text(it.p.toFixed(1)+'%',fbX+fbW/2,Yd+U(4.2)+fbH/2+U(1),{align:'center'});
+          doc.setTextColor(...DARK);
+          Yd+=U(4.2)+fbH+U(3);
+        });
+
+        doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+        doc.text('Budget Total Consommé',fbX,Yd+U(3));
+        doc.setFont(undefined,'normal');doc.setTextColor(180,83,9);
+        doc.text(fin.pctTotal.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+        doc.setFillColor(220,228,238);doc.roundedRect(fbX,Yd+U(4.2),fbW,fbH,1,1,'F');
+        let ft=Math.max(0,fin.pctTotal/100*fbW);
+        if(ft>0){doc.setFillColor(217,119,6);doc.roundedRect(fbX,Yd+U(4.2),ft,fbH,1,1,'F');}
+        doc.setTextColor(...DARK);Yd+=U(4.2)+fbH+U(1);
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(140,150,160);
+        doc.text(fin.totalConsomme.toFixed(2)+' DH / '+fin.totalBudget.toFixed(2)+' DH',pW-14,Yd+U(2),{align:'right'});
+        doc.setTextColor(...DARK);Yd+=U(2);
+
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
+        doc.text('Théorique (temps écoulé)',fbX,Yd+U(4.6));
+        doc.setFillColor(230,233,238);doc.roundedRect(fbX+38,Yd+U(2.4),fbW-38,U(3),1,1,'F');
+        const tf2=Math.max(0,delaiInfo.timePct/100*(fbW-38));
+        if(tf2>0){doc.setFillColor(156,163,175);doc.roundedRect(fbX+38,Yd+U(2.4),tf2,U(3),1,1,'F');}
+        doc.setFontSize(Math.max(3.6,4.8*SC));doc.setFont(undefined,'bold');doc.setTextColor(120,130,140);
+        doc.text(delaiInfo.timePct.toFixed(1)+'%',fbX+38+(fbW-38)/2,Yd+U(4.3),{align:'center'});
+        doc.setTextColor(...DARK);Yd+=U(8);
+
+        const moisRestants=Math.max(1,delaiInfo.remainingDays/30.4375);
+        const restantBudget=Math.max(0,fin.totalBudget-fin.totalConsomme);
+        const valTheoMensuelle=restantBudget/moisRestants;
+        doc.setFillColor(255,251,235);doc.roundedRect(14,Yd,pW-28,U(9),1.5,1.5,'F');
+        doc.setDrawColor(252,211,77);doc.setLineWidth(0.25);doc.roundedRect(14,Yd,pW-28,U(9),1.5,1.5,'D');
+        doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');doc.setTextColor(180,83,9);
+        doc.text('Valeur théorique à consommer par mois (mois restants : '+moisRestants.toFixed(1)+') :',17,Yd+U(4));
+        doc.setFontSize(Math.max(5,7*SC));doc.setFont(undefined,'bold');doc.setTextColor(120,53,15);
+        doc.text(valTheoMensuelle.toFixed(2)+' DH / mois',pW-17,Yd+U(4),{align:'right'});
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(146,64,14);
+        doc.text('Budget restant : '+restantBudget.toFixed(2)+' DH',17,Yd+U(7.5));
+        doc.setTextColor(...DARK);
+        Yd+=U(9)+U(6);
+      }
     }
 
     // Signatures placed on this page (page 2) — fills remaining space
@@ -1622,18 +1935,44 @@ async function _doPDF(qrDataUrl){
       r.notes||'RAS',tot];
   });
 
+  // Append budget entries as rows
+  const budgetSorted=[...budgetEntries].sort((a,b)=>a.date.localeCompare(b.date));
+  const seenBudgetPDF={};
+  const budgetRows=budgetSorted.map(b=>{
+    let totB='';
+    if(!seenBudgetPDF[b.date]){
+      totB=budgetEntries.filter(x=>x.date===b.date).reduce((s,x)=>s+x.valeur,0).toFixed(2)+' DH';
+      seenBudgetPDF[b.date]=true;
+    }
+    return[
+      new Date(b.date+'T00:00:00').toLocaleDateString('fr-FR')+' —',
+      b.saisiePar||'—',
+      'Budget / '+b.phase,
+      b.commande,
+      'Décompte budgétaire',
+      b.valeur.toFixed(2)+' DH',
+      b.notes||'RAS',
+      totB
+    ];
+  });
+  const allRows=[...dRows,...budgetRows];
+
   let autoPageNum=2;
   doc.autoTable({
-    head:[['Date / Heure','Saisie par','Catégorie','Section','Détails','Qté/Dist.','Obs.','Total Journée']],
-    body:dRows,
+    head:[['Date / Heure','Saisie par','Catégorie','Commande / Section','Détails','Qté / Valeur','Obs.','Total Journée']],
+    body:allRows,
     startY:29,
     styles:{fontSize:5.5,cellPadding:1.2,overflow:'linebreak'},
     headStyles:{fillColor:B,textColor:[255,255,255],fontStyle:'bold',fontSize:6},
     alternateRowStyles:{fillColor:[247,251,255]},
-    columnStyles:{0:{cellWidth:22},1:{cellWidth:13},2:{cellWidth:18},3:{cellWidth:22},4:{cellWidth:34},5:{cellWidth:13},6:{cellWidth:17},7:{cellWidth:25}},
+    columnStyles:{0:{cellWidth:22},1:{cellWidth:13},2:{cellWidth:20},3:{cellWidth:22},4:{cellWidth:32},5:{cellWidth:15},6:{cellWidth:15},7:{cellWidth:23}},
     margin:{left:14,right:14},
+    willDrawCell:function(data){
+      if(data.section==='body'&&data.row.raw&&data.row.raw[2]&&String(data.row.raw[2]).startsWith('Budget')){
+        doc.setFillColor(255,251,235);
+      }
+    },
     didDrawPage:function(data){
-      // Draw header on continuation pages only
       if(doc.getNumberOfPages()>2){
         hdr(doc.getNumberOfPages());
       }
@@ -1707,7 +2046,87 @@ function toggleIdentificationsOpt(radio){
   if(radio.value==='identification'&&radio.checked){sb.classList.remove('hidden');ss.setAttribute('required','true');}
   else{sb.classList.add('hidden');ss.removeAttribute('required');ss.value='';}
 }
-function initApp(){updateDateTime();setInterval(updateDateTime,1000);renderTable();calculateStatistics();renderProgressBars();}
+function initApp(){updateDateTime();setInterval(updateDateTime,1000);renderTable();calculateStatistics();renderProgressBars();renderBudgetTable();}
+
+// ════════════════════════════ BUDGET ════════════════════════════
+function handleBudgetFormSubmit(e){
+  e.preventDefault();const form=e.target;const idInput=form.querySelector('.budget-record-id').value;
+  const commande=form.querySelector('.field-budget-commande').value.trim();
+  const phase=form.querySelector('input[name="budget-phase"]:checked')?.value||'';
+  const date=form.querySelector('.field-budget-date').value;
+  const valeur=parseFloat(form.querySelector('.field-budget-valeur').value)||0;
+  const sO=form.querySelector('.field-notes-select')?.value||'';const cO=form.querySelector('.field-notes-custom')?.value.trim()||'';
+  const notes=sO==='Autre'?(cO?'Autre: '+cO:'Autre'):(sO||'RAS');
+  if(!commande||!phase||!date){showToast('Veuillez remplir tous les champs obligatoires.','error');return;}
+  const entry={id:idInput||('bud_'+Date.now()),commande,phase,date,valeur,notes,saisiePar:currentUser?(USERS[currentUser]?.displayName||currentUser):'—'};
+  if(idInput){const idx=budgetEntries.findIndex(b=>b.id===idInput);if(idx>-1)budgetEntries[idx]=entry;}
+  else budgetEntries.push(entry);
+  localStorage.setItem('water_project_budget',JSON.stringify(budgetEntries));
+  form.reset();form.querySelector('.budget-record-id').value='';
+  const cb0=form.querySelector('.custom-notes-box');if(cb0)cb0.classList.add('hidden');
+  form.querySelector('.btn-budget-cancel').classList.add('hidden');
+  renderBudgetTable();renderProgressBars();
+  showToast(idInput?'Décompte modifié avec succès.':'Décompte ajouté avec succès.');
+}
+function renderBudgetTable(){
+  const tb=document.getElementById('budget-table-body');if(!tb)return;
+  const nd=document.getElementById('budget-no-data-msg');tb.innerHTML='';
+  if(!budgetEntries.length){nd.classList.remove('hidden');return;}nd.classList.add('hidden');
+  const sorted=[...budgetEntries].sort((a,b)=>b.date.localeCompare(a.date));
+  sorted.forEach(b=>{
+    const tr=document.createElement('tr');tr.className='table-row-hover transition-colors border-b';tr.style.borderColor='var(--srm-border)';
+    const phaseColor=b.phase==='Réseau'?'var(--srm-blue)':'var(--srm-green)';
+    tr.innerHTML=`<td class="p-2.5 font-bold text-gray-700">${b.commande}</td>
+      <td class="p-2.5"><span class="cat-badge" style="background:${b.phase==='Réseau'?'var(--srm-blue-light)':'var(--srm-green-light)'};color:${phaseColor}">${b.phase}</span></td>
+      <td class="p-2.5 text-gray-500">${new Date(b.date+'T00:00:00').toLocaleDateString('fr-FR')}</td>
+      <td class="p-2.5 font-mono-custom font-bold text-gray-800">${b.valeur.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} DH</td>
+      <td class="p-2.5 text-gray-500">${b.notes||'RAS'}</td>
+      <td class="p-2.5 text-center">
+        <button onclick="editBudgetEntry('${b.id}')" class="p-1.5 rounded-lg text-xs hover:bg-blue-50 transition-colors" style="color:var(--srm-blue)" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteBudgetEntry('${b.id}')" class="p-1.5 rounded-lg text-xs hover:bg-red-50 text-red-500 transition-colors" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+}
+function editBudgetEntry(id){
+  const b=budgetEntries.find(x=>x.id===id);if(!b)return;
+  const cont=document.getElementById('budget-content');if(!cont.classList.contains('open'))toggleSection('budget-content');
+  const form=cont.querySelector('form');
+  form.querySelector('.budget-record-id').value=b.id;
+  form.querySelector('.field-budget-commande').value=b.commande;
+  form.querySelector(`input[name="budget-phase"][value="${b.phase}"]`).checked=true;
+  form.querySelector('.field-budget-date').value=b.date;
+  form.querySelector('.field-budget-valeur').value=b.valeur;
+  const sd=form.querySelector('.field-notes-select'),cb=form.querySelector('.custom-notes-box'),ci=form.querySelector('.field-notes-custom');
+  if(b.notes&&b.notes.startsWith('Autre: ')){if(sd)sd.value='Autre';if(cb)cb.classList.remove('hidden');if(ci)ci.value=b.notes.replace('Autre: ','');}
+  else{if(sd)sd.value=(b.notes==='RAS'?'':b.notes||'');if(cb)cb.classList.add('hidden');if(ci)ci.value='';}
+  form.querySelector('.btn-budget-cancel').classList.remove('hidden');
+  form.querySelector('.btn-budget-submit span').innerText='Mettre à jour';
+}
+function cancelBudgetEdit(btn){
+  const form=btn.closest('form');form.reset();form.querySelector('.budget-record-id').value='';
+  const cb=form.querySelector('.custom-notes-box');if(cb)cb.classList.add('hidden');
+  btn.classList.add('hidden');form.querySelector('.btn-budget-submit span').innerText='Ajouter';
+}
+function deleteBudgetEntry(id){
+  if(confirm('Confirmer la suppression de ce décompte ?')){
+    budgetEntries=budgetEntries.filter(b=>b.id!==id);
+    localStorage.setItem('water_project_budget',JSON.stringify(budgetEntries));
+    renderBudgetTable();renderProgressBars();
+    showToast('Décompte supprimé.','error');
+  }
+}
+// Calcul pur (réutilisable HTML + PDF)
+function computeBudgetAnalysis(){
+  const consReseau=budgetEntries.filter(b=>b.phase==='Réseau').reduce((s,b)=>s+b.valeur,0);
+  const consBranch=budgetEntries.filter(b=>b.phase==='Branchements').reduce((s,b)=>s+b.valeur,0);
+  const budR=projectTargets.budgetReseau||0, budB=projectTargets.budgetBranchements||0;
+  const pctR=budR>0?Math.min(100,consReseau/budR*100):0;
+  const pctB=budB>0?Math.min(100,consBranch/budB*100):0;
+  const totalBudget=budR+budB, totalConsomme=consReseau+consBranch;
+  const pctTotal=totalBudget>0?Math.min(100,totalConsomme/totalBudget*100):0;
+  return{consReseau,consBranch,budR,budB,pctR,pctB,totalBudget,totalConsomme,pctTotal};
+}
 function handleFormSubmit(e,category){
   e.preventDefault();const form=e.target;const idInput=form.querySelector('.record-id').value;
   const projet=document.getElementById('global-project-name').value.trim()||'Projet non spécifié';
@@ -1868,6 +2287,69 @@ function renderProgressBars(){
   }
 
   renderDelaiAnalysis(c, globalPct);
+  renderFinanceBars(timePct);
+}
+
+// ════════════════════════════ AVANCEMENT FINANCIÈRE ════════════════════════════
+function renderFinanceBars(timePct){
+  const container=document.getElementById('finance-bars-container');
+  if(!container)return;container.innerHTML='';
+  const f=computeBudgetAnalysis();
+
+  // Update stat cards
+  const today=new Date().toISOString().split('T')[0];
+  const todayVal=budgetEntries.filter(b=>b.date===today).reduce((s,b)=>s+b.valeur,0);
+  const todayEl=document.getElementById('finance-today-val');
+  const totalEl=document.getElementById('finance-total-val');
+  if(todayEl) todayEl.innerText=todayVal.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(totalEl) totalEl.innerText=f.totalConsomme.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  if(f.totalBudget<=0){
+    container.innerHTML='<p class="text-xs text-gray-400 italic">Aucun budget renseigné (feuille "total à réaliser", cellules B7/B8).</p>';
+    return;
+  }
+  const fmtDH=v=>v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' DH';
+  const items=[
+    {name:'Budget Réseau',done:fmtDH(f.consReseau),target:fmtDH(f.budR),p:f.pctR,color:'var(--srm-blue)',show:f.budR>0},
+    {name:'Budget Branchements',done:fmtDH(f.consBranch),target:fmtDH(f.budB),p:f.pctB,color:'var(--srm-green)',show:f.budB>0},
+  ];
+  items.forEach(it=>{
+    if(!it.show)return;
+    const div=document.createElement('div');div.className='space-y-0.5';
+    div.innerHTML=
+      '<div class="flex justify-between items-center" style="margin-bottom:2px;">'+
+        '<span class="text-xs font-semibold text-gray-600">'+it.name+'</span>'+
+        '<span class="text-xs text-gray-500" style="font-size:10px;">'+it.done+' / '+it.target+'</span>'+
+      '</div>'+
+      '<div class="progress-bar-bg" style="position:relative;height:7px;">'+
+        '<div class="progress-bar-fill" style="width:'+it.p+'%;background:'+it.color+';height:7px;"></div>'+
+        '<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:900;color:'+it.color+';white-space:nowrap;">'+it.p.toFixed(1)+'%</span>'+
+      '</div>';
+    container.appendChild(div);
+  });
+  // Total
+  const totalDiv=document.createElement('div');totalDiv.className='pt-2';
+  let theoBarHTML='';
+  if(timePct!==null && timePct!==undefined){
+    theoBarHTML=
+      '<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">'+
+        '<span style="font-size:9px;color:#9ca3af;font-weight:600;white-space:nowrap;">Théorique</span>'+
+        '<div style="flex:1;position:relative;height:5px;">'+
+          '<div style="width:100%;height:5px;background:#e5e7eb;border-radius:3px;"></div>'+
+          '<div style="position:absolute;top:0;left:0;width:'+timePct+'%;height:5px;background:#9ca3af;border-radius:3px;border:1px dashed #6b7280;box-sizing:border-box;"></div>'+
+          '<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:7.5px;font-weight:800;color:#6b7280;white-space:nowrap;">'+timePct.toFixed(1)+'%</span>'+
+        '</div>'+
+      '</div>';
+  }
+  totalDiv.innerHTML=
+    '<div class="flex justify-between items-center mb-1">'+
+      '<span class="text-xs font-bold text-gray-600">Budget Total Consommé</span>'+
+      '<span class="text-sm font-black" style="color:#b45309">'+f.pctTotal.toFixed(1)+'%</span>'+
+    '</div>'+
+    '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+f.pctTotal+'%;background:linear-gradient(90deg,#d97706,#b45309)"></div></div>'+
+    theoBarHTML+
+    '<p class="text-[10px] text-gray-400 mt-1.5 text-right">'+fmtDH(f.totalConsomme)+' / '+fmtDH(f.totalBudget)+'</p>';
+  container.appendChild(totalDiv);
 }
 
 // ════════════════════════════ ANALYSE DU DÉLAI ════════════════════════════
@@ -2366,6 +2848,74 @@ async function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateSt
   // ── Calcul avancement (réutilisé sur la page Délai) ──
   const pctV=(v,t)=>t>0?Math.min(100,v/t*100):0;
 
+  // ════ CONCLUSION (bas de page 1, ancré en bas) ════
+  {
+    const _fmtPct2=(v,t)=>t>0?Math.min(100,(v/t*100)).toFixed(0)+'%':'—';
+    const conclW=pW-28;
+    const TH=6, IH=8, SH=4, RH1=4.5, RH2=4, PAD=3;
+    const conclH=TH+1+IH+1+SH+RH1+RH2+PAD;
+    const conclY=yL+4;
+    // Titre
+    doc.setFillColor(...B);doc.roundedRect(14,conclY,conclW,TH,1.5,1.5,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont(undefined,'bold');
+    doc.text('CONCLUSION',16,conclY+4.2);
+    // Bloc fond
+    const blkY=conclY+TH+1;
+    const blkH=conclH-TH-1;
+    doc.setFillColor(245,248,252);doc.roundedRect(14,blkY,conclW,blkH,1,1,'F');
+    doc.setDrawColor(...B);doc.setLineWidth(0.2);doc.roundedRect(14,blkY,conclW,blkH,1,1,'D');
+    doc.setFillColor(...B);doc.roundedRect(14,blkY,2,blkH,1,0,'F');
+    const lxC=20, col2xC=lxC+(conclW-6)/2;
+    // Info ligne 1
+    doc.setFontSize(6);doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Projet :',lxC,blkY+5);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(doc.splitTextToSize(proj,(conclW-6)/2-22)[0],lxC+17,blkY+5);
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Etabli par :',col2xC,blkY+5);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(uname,col2xC+20,blkY+5);
+    // Info ligne 2
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Période :',lxC,blkY+5+IH/2+2);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(fmtDate(from)+' \u2192 '+fmtDate(to),lxC+17,blkY+5+IH/2+2);
+    doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('Export :',col2xC,blkY+5+IH/2+2);
+    doc.setFont(undefined,'normal');doc.setTextColor(40,55,70);
+    doc.text(dateStr+' '+timeStr,col2xC+20,blkY+5+IH/2+2);
+    // Séparateur
+    const sepYC=blkY+IH+1;
+    doc.setDrawColor(200,215,230);doc.setLineWidth(0.15);doc.line(lxC,sepYC,pW-16,sepYC);
+    // Sous-titre
+    doc.setFont(undefined,'bold');doc.setFontSize(6);doc.setTextColor(...B);
+    doc.text('Statistiques de la période',lxC,sepYC+SH);
+    // Tableau 4 colonnes dessiné manuellement
+    const colsC=[
+      {lbl:'Réseau posé',   val:tL.toFixed(0)+' m / '+projectTargets.linearReseau+' m',  pct:_fmtPct2(tL,projectTargets.linearReseau),  col:B},
+      {lbl:'Branchements',  val:tB+' u / '+projectTargets.branchements+' u',               pct:_fmtPct2(tB,projectTargets.branchements),   col:G},
+      {lbl:'Remise en état',val:tRem.toFixed(0)+' m / '+projectTargets.remiseEtat+' m',  pct:_fmtPct2(tRem,projectTargets.remiseEtat),  col:O},
+      {lbl:'Raccordements', val:tRac+' u / '+projectTargets.raccordements+' u',            pct:_fmtPct2(tRac,projectTargets.raccordements),col:P}
+    ];
+    const tblXC=16, tblWC=conclW-4, cWC=tblWC/4;
+    const tblYC=sepYC+SH+1;
+    colsC.forEach((c,i)=>{
+      const cx=tblXC+i*cWC;
+      doc.setFillColor(...c.col);doc.rect(cx,tblYC,cWC,RH1,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(5.5);doc.setFont(undefined,'bold');
+      doc.text(c.lbl,cx+cWC/2,tblYC+RH1/2+1,{align:'center'});
+      doc.setFillColor(255,255,255);doc.rect(cx,tblYC+RH1,cWC,RH1,'F');
+      doc.setTextColor(30,45,61);doc.setFontSize(5.8);doc.setFont(undefined,'bold');
+      doc.text(c.val,cx+cWC/2,tblYC+RH1+RH1/2+1,{align:'center'});
+      doc.setFillColor(248,250,253);doc.rect(cx,tblYC+RH1*2,cWC,RH2,'F');
+      doc.setTextColor(...c.col);doc.setFontSize(6);doc.setFont(undefined,'bold');
+      doc.text(c.pct,cx+cWC/2,tblYC+RH1*2+RH2/2+1.5,{align:'center'});
+      doc.setDrawColor(220,228,238);doc.setLineWidth(0.15);
+      doc.rect(cx,tblYC,cWC,RH1+RH1+RH2,'D');
+    });
+    doc.setTextColor(...DARK);
+  }
+
   // Signatures (helper, drawn on page 2)
   const bWs=83, bHs=30, sG=7, sX1=14, sX2=14+bWs+sG;
   function sigBox(x,y,title,sub){
@@ -2407,27 +2957,52 @@ async function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateSt
 
     doc.setFillColor(124,58,237);doc.roundedRect(14,20,pW-28,7,2,2,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(8.5);doc.setFont(undefined,'bold');
-    doc.text('ANALYSE DU DÉLAI CONTRACTUEL (AVANCEMENT GLOBAL)',pW/2,25,{align:'center'});
+    doc.text('ANALYSE DU DÉLAI CONTRACTUEL & BUDGET (AVANCEMENT GLOBAL)',pW/2,25,{align:'center'});
     doc.setTextColor(...DARK);
 
     let Yd=29;
     const fmtDateFR = d => d.toLocaleDateString('fr-FR');
 
+    // ── Facteur d'échelle : adapte tout le contenu à l'espace entre le titre et les signatures ──
+    const _bHsC0=28, _sGap0=2, _bMargin0=8;
+    const _availH = (pH - _bMargin0 - _bHsC0 - _sGap0) - Yd;
+    const _finEst = computeBudgetAnalysis();
+    const _nPhasesShown = phases.filter(ph=>parseFloat(ph.t)!==0).length;
+    let _estH = 19;               // bandeau de statut (13+6)
+    _estH += 22;                  // cartes KPI (16+6)
+    _estH += 9;                   // entête "avancement par phase"
+    _estH += _nPhasesShown*15.5;  // par phase : barre réelle + barre théorique
+    _estH += 2;
+    _estH += 9 + 11.5 + 16;       // entête + barre réelle + barre théorique (réel vs théorique)
+    if(delaiInfo.remainingDays>0 && delaiInfo.cadences.length){
+      _estH += 8.5 + (delaiInfo.cadences.length+1)*7.4 + 6;
+    } else if(delaiInfo.remainingDays<=0){
+      _estH += 16;
+    }
+    if(_finEst.totalBudget>0){
+      _estH += 9; // entête avancement financière
+      let _nFin=0; if(_finEst.budR>0)_nFin++; if(_finEst.budB>0)_nFin++;
+      _estH += _nFin*11.2;
+      _estH += 9.2 + 2 + 8 + 15; // budget total consommé + théorique + valeur théorique mensuelle
+    }
+    const SC = Math.max(0.6, Math.min(1, _availH/_estH));
+    const U = v => v*SC;
+
     // Status banner
     const scHex = delaiInfo.statusColor.replace('#','');
     const scRgb = [parseInt(scHex.substring(0,2),16), parseInt(scHex.substring(2,4),16), parseInt(scHex.substring(4,6),16)];
     doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);
-    doc.roundedRect(14,Yd,pW-28,13,2,2,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(9.5);doc.setFont(undefined,'bold');
-    doc.text(delaiInfo.statusBadge,18,Yd+5.5);
-    doc.setFontSize(6.5);doc.setFont(undefined,'normal');
+    doc.roundedRect(14,Yd,pW-28,U(13),2,2,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(Math.max(6,9.5*SC));doc.setFont(undefined,'bold');
+    doc.text(delaiInfo.statusBadge,18,Yd+U(5.5));
+    doc.setFontSize(Math.max(4.5,6.5*SC));doc.setFont(undefined,'normal');
     const msgLines = doc.splitTextToSize(delaiInfo.statusMsg, pW-40);
-    doc.text(msgLines.slice(0,2), 18, Yd+9.5);
+    doc.text(msgLines.slice(0,2), 18, Yd+U(9.5));
     doc.setTextColor(...DARK);
-    Yd += 13 + 6;
+    Yd += U(13) + U(6);
 
     // KPI cards
-    const kpiW=(pW-28-3*3)/4, kpiH=16;
+    const kpiW=(pW-28-3*3)/4, kpiH=U(16);
     const kpis=[
       {val:delaiInfo.delaiMois+' mois', lbl:'Délai contractuel', col:B, bg:LB},
       {val:delaiInfo.elapsedDays+' / '+delaiInfo.totalDays, lbl:'Jours écoulés / total', col:G, bg:[234,247,236]},
@@ -2437,87 +3012,88 @@ async function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateSt
     kpis.forEach((k,i)=>{
       const x=14+i*(kpiW+3);
       doc.setFillColor(...k.bg);doc.roundedRect(x,Yd,kpiW,kpiH,1.5,1.5,'F');
-      doc.setTextColor(...k.col);doc.setFontSize(9);doc.setFont(undefined,'bold');
-      doc.text(k.val,x+kpiW/2,Yd+6.5,{align:'center'});
-      doc.setFontSize(5.5);doc.setFont(undefined,'normal');doc.setTextColor(100,110,120);
-      doc.text(k.lbl,x+kpiW/2,Yd+12,{align:'center'});
+      doc.setTextColor(...k.col);doc.setFontSize(Math.max(5,9*SC));doc.setFont(undefined,'bold');
+      doc.text(k.val,x+kpiW/2,Yd+U(6.5),{align:'center'});
+      doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(100,110,120);
+      doc.text(k.lbl,x+kpiW/2,Yd+U(12),{align:'center'});
     });
     doc.setTextColor(...DARK);
-    Yd += kpiH + 6;
+    Yd += kpiH + U(6);
 
     // ── AVANCEMENT DU PROJET PAR PHASE (Réel + Théorique réel calculé) ──
-    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(...B);
-    doc.text('AVANCEMENT DU PROJET PAR PHASE',16,Yd+4);
-    doc.setTextColor(...DARK);Yd+=9;
+    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('AVANCEMENT DU PROJET PAR PHASE',16,Yd+U(4));
+    doc.setTextColor(...DARK);Yd+=U(9);
 
-    const pbW=pW-28, pbH=4, pbX=14, pbThW=pbW-13-16;
+    const pbW=pW-28, pbH=U(4), pbX=14, pbThW=pbW-13-16;
     const phaseTheoArr=computePhaseTheoreticalPcts(delaiInfo.totalDays,delaiInfo.elapsedDays);
     phases.forEach((ph,phIdx)=>{
       if(parseFloat(ph.t)===0) return;
       // Réel — pourcentage centré au milieu de la barre
-      doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-      doc.text(ph.n,pbX,Yd+3);
+      doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+      doc.text(ph.n,pbX,Yd+U(3));
       doc.setFont(undefined,'normal');doc.setTextColor(100,120,140);
-      doc.text(ph.d+' / '+ph.t,pW-14,Yd+3,{align:'right'});
-      doc.setFillColor(220,228,238);doc.roundedRect(pbX,Yd+4.2,pbW,pbH,1,1,'F');
+      doc.text(ph.d+' / '+ph.t,pW-14,Yd+U(3),{align:'right'});
+      doc.setFillColor(220,228,238);doc.roundedRect(pbX,Yd+U(4.2),pbW,pbH,1,1,'F');
       const pf=Math.max(0,ph.p/100*pbW);
-      if(pf>0){doc.setFillColor(...ph.c);doc.roundedRect(pbX,Yd+4.2,pf,pbH,1,1,'F');}
+      if(pf>0){doc.setFillColor(...ph.c);doc.roundedRect(pbX,Yd+U(4.2),pf,pbH,1,1,'F');}
       const pC=ph.p>=75?[22,163,74]:ph.p>=50?[217,119,6]:[239,68,68];
       const pTxt=ph.p.toFixed(1)+'%';
-      doc.setFontSize(6);doc.setFont(undefined,'bold');
-      const pCx=pbX+pbW/2, pCy=Yd+4.2+pbH/2;
+      doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');
+      const pCx=pbX+pbW/2, pCy=Yd+U(4.2)+pbH/2;
       doc.setTextColor(...pC);
-      doc.text(pTxt,pCx,pCy+1,{align:'center'});
-      Yd+=4.2+pbH+0.8;
+      doc.text(pTxt,pCx,pCy+U(1),{align:'center'});
+      Yd+=U(4.2)+pbH+U(0.8);
       // Théorique — propre à cette phase (poids de sa quantité cible dans le délai global)
       const phTheo=phaseTheoArr[phIdx]||0;
-      doc.setFontSize(5.5);doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
-      doc.text('Théorique',pbX,Yd+2.6);
-      doc.setFillColor(230,233,238);doc.roundedRect(pbX+13,Yd,pbThW,3,1,1,'F');
+      doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
+      doc.text('Théorique',pbX,Yd+U(2.6));
+      doc.setFillColor(230,233,238);doc.roundedRect(pbX+13,Yd,pbThW,U(3),1,1,'F');
       const tf=Math.max(0,phTheo/100*pbThW);
-      if(tf>0){doc.setFillColor(156,163,175);doc.roundedRect(pbX+13,Yd,tf,3,1,1,'F');}
+      if(tf>0){doc.setFillColor(156,163,175);doc.roundedRect(pbX+13,Yd,tf,U(3),1,1,'F');}
       const tTxt=phTheo.toFixed(1)+'%';
-      doc.setFontSize(4.8);doc.setFont(undefined,'bold');
-      const tCx=pbX+13+pbThW/2, tCy=Yd+1.5;
+      doc.setFontSize(Math.max(3.6,4.8*SC));doc.setFont(undefined,'bold');
+      const tCx=pbX+13+pbThW/2, tCy=Yd+U(1.5);
       doc.setTextColor(120,130,140);
-      doc.text(tTxt,tCx,tCy+0.9,{align:'center'});
+      doc.text(tTxt,tCx,tCy+U(0.9),{align:'center'});
       doc.setTextColor(...DARK);
-      Yd+=6.5;
+      Yd+=U(6.5);
     });
-    Yd+=2;
+    Yd+=U(2);
 
     // Avancement réel vs théorique bars
-    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(...B);
-    doc.text('AVANCEMENT RÉEL vs THÉORIQUE (CUMUL GLOBAL DU PROJET)',16,Yd+4);
-    doc.setTextColor(...DARK);Yd+=9;
+    doc.setFillColor(...GR);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(...B);
+    doc.text('AVANCEMENT RÉEL vs THÉORIQUE (CUMUL GLOBAL DU PROJET)',16,Yd+U(4));
+    doc.setTextColor(...DARK);Yd+=U(9);
 
-    const dbW=pW-28, dbH=4, dbX=14;
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-    doc.text('Avancement réel (travaux)',dbX,Yd+3);
+    const dbW=pW-28, dbH=U(4), dbX=14;
+    // Réel
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+    doc.text('Avancement réel (travaux)',dbX,Yd+U(3));
     doc.setFont(undefined,'normal');doc.setTextColor(...scRgb);
-    doc.text(delaiInfo.globalPct.toFixed(1)+'%',pW-14,Yd+3,{align:'right'});
-    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+4.2,dbW,dbH,1,1,'F');
+    doc.text(delaiInfo.globalPct.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+U(4.2),dbW,dbH,1,1,'F');
     let f1=Math.max(0,delaiInfo.globalPct/100*dbW);
-    if(f1>0){doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);doc.roundedRect(dbX,Yd+4.2,f1,dbH,1,1,'F');}
-    doc.setTextColor(...DARK);Yd+=11.5;
-
-    doc.setFontSize(6.5);doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
-    doc.text('Avancement théorique (temps écoulé)',dbX,Yd+3);
+    if(f1>0){doc.setFillColor(scRgb[0],scRgb[1],scRgb[2]);doc.roundedRect(dbX,Yd+U(4.2),f1,dbH,1,1,'F');}
+    doc.setTextColor(...DARK);Yd+=U(11.5);
+    // Théorique
+    doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+    doc.text('Avancement théorique (temps écoulé)',dbX,Yd+U(3));
     doc.setFont(undefined,'normal');doc.setTextColor(140,150,160);
-    doc.text(delaiInfo.timePct.toFixed(1)+'%',pW-14,Yd+3,{align:'right'});
-    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+4.2,dbW,dbH,1,1,'F');
+    doc.text(delaiInfo.timePct.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+    doc.setFillColor(220,228,238);doc.roundedRect(dbX,Yd+U(4.2),dbW,dbH,1,1,'F');
     let f2=Math.max(0,delaiInfo.timePct/100*dbW);
-    if(f2>0){doc.setFillColor(156,163,175);doc.roundedRect(dbX,Yd+4.2,f2,dbH,1,1,'F');}
-    doc.setTextColor(...DARK);Yd+=16;
+    if(f2>0){doc.setFillColor(156,163,175);doc.roundedRect(dbX,Yd+U(4.2),f2,dbH,1,1,'F');}
+    doc.setTextColor(...DARK);Yd+=U(16);
 
     // Cadences table
     if(delaiInfo.remainingDays>0 && delaiInfo.cadences.length){
-      doc.setFillColor(124,58,237);doc.roundedRect(14,Yd,pW-28,6,1,1,'F');
-      doc.setTextColor(255,255,255);doc.setFontSize(6.5);doc.setFont(undefined,'bold');
-      doc.text('CADENCE QUOTIDIENNE REQUISE POUR RESPECTER LE DELAI',16,Yd+4);
-      doc.setTextColor(...DARK);Yd+=8.5;
+      doc.setFillColor(124,58,237);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');
+      doc.text('CADENCE QUOTIDIENNE REQUISE POUR RESPECTER LE DELAI',16,Yd+U(4));
+      doc.setTextColor(...DARK);Yd+=U(8.5);
 
       const cadBody = delaiInfo.cadences.map(cd=>[
         cd.name, cd.restant.toFixed(2)+' '+cd.unit, cd.cadenceJour.toFixed(2)+' '+cd.unit+'/jour'
@@ -2525,18 +3101,85 @@ async function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateSt
       doc.autoTable({
         head:[['Phase','Quantité restante','Cadence/jour requise']],
         body:cadBody, startY:Yd,
-        styles:{fontSize:7.5,cellPadding:2.2,halign:'center'},
-        headStyles:{fillColor:[124,58,237],textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
+        styles:{fontSize:Math.max(5,7.5*SC),cellPadding:U(2.2),halign:'center'},
+        headStyles:{fillColor:[124,58,237],textColor:[255,255,255],fontStyle:'bold',fontSize:Math.max(5,7.5*SC)},
         alternateRowStyles:{fillColor:[247,251,255]},
         columnStyles:{0:{halign:'left',fontStyle:'bold'},2:{fontStyle:'bold',textColor:[124,58,237]}},
         margin:{left:14,right:14},tableWidth:pW-28
       });
-      Yd = doc.lastAutoTable.finalY + 6;
+      Yd = doc.lastAutoTable.finalY + U(6);
     } else if(delaiInfo.remainingDays<=0){
-      doc.setFillColor(254,242,242);doc.roundedRect(14,Yd,pW-28,9,2,2,'F');
-      doc.setTextColor(220,38,38);doc.setFontSize(7.5);doc.setFont(undefined,'bold');
-      doc.text('Aucune cadence calculable : le délai contractuel est déjà dépassé.',pW/2,Yd+5.8,{align:'center'});
-      doc.setTextColor(...DARK);Yd+=16;
+      doc.setFillColor(254,242,242);doc.roundedRect(14,Yd,pW-28,U(9),2,2,'F');
+      doc.setTextColor(220,38,38);doc.setFontSize(Math.max(5,7.5*SC));doc.setFont(undefined,'bold');
+      doc.text('Aucune cadence calculable : le délai contractuel est déjà dépassé.',pW/2,Yd+U(5.8),{align:'center'});
+      doc.setTextColor(...DARK);Yd+=U(16);
+    }
+
+
+    // ── AVANCEMENT FINANCIÈRE ──
+    {
+      const fin=computeBudgetAnalysis();
+      if(fin.totalBudget>0){
+        doc.setFillColor(217,119,6);doc.roundedRect(14,Yd,pW-28,U(6),1,1,'F');
+        doc.setTextColor(255,255,255);doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');
+        doc.text('AVANCEMENT FINANCIÈRE',16,Yd+U(4));
+        doc.setTextColor(...DARK);Yd+=U(9);
+
+        const fbW=pW-28, fbH=U(4), fbX=14;
+        const finItems=[
+          {n:'Budget Réseau', d:fin.consReseau.toFixed(2)+' DH', t:fin.budR.toFixed(2)+' DH', p:fin.pctR, c:B, show:fin.budR>0},
+          {n:'Budget Branchements', d:fin.consBranch.toFixed(2)+' DH', t:fin.budB.toFixed(2)+' DH', p:fin.pctB, c:G, show:fin.budB>0}
+        ];
+        finItems.forEach(it=>{
+          if(!it.show)return;
+          doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+          doc.text(it.n,fbX,Yd+U(3));
+          doc.setFont(undefined,'normal');doc.setTextColor(100,120,140);
+          doc.text(it.d+' / '+it.t,pW-14,Yd+U(3),{align:'right'});
+          doc.setFillColor(220,228,238);doc.roundedRect(fbX,Yd+U(4.2),fbW,fbH,1,1,'F');
+          const pf=Math.max(0,it.p/100*fbW);
+          if(pf>0){doc.setFillColor(...it.c);doc.roundedRect(fbX,Yd+U(4.2),pf,fbH,1,1,'F');}
+          doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');doc.setTextColor(...it.c);
+          doc.text(it.p.toFixed(1)+'%',fbX+fbW/2,Yd+U(4.2)+fbH/2+U(1),{align:'center'});
+          doc.setTextColor(...DARK);
+          Yd+=U(4.2)+fbH+U(3);
+        });
+
+        doc.setFontSize(Math.max(5,6.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(60,70,80);
+        doc.text('Budget Total Consommé',fbX,Yd+U(3));
+        doc.setFont(undefined,'normal');doc.setTextColor(180,83,9);
+        doc.text(fin.pctTotal.toFixed(1)+'%',pW-14,Yd+U(3),{align:'right'});
+        doc.setFillColor(220,228,238);doc.roundedRect(fbX,Yd+U(4.2),fbW,fbH,1,1,'F');
+        let ft=Math.max(0,fin.pctTotal/100*fbW);
+        if(ft>0){doc.setFillColor(217,119,6);doc.roundedRect(fbX,Yd+U(4.2),ft,fbH,1,1,'F');}
+        doc.setTextColor(...DARK);Yd+=U(4.2)+fbH+U(1);
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(140,150,160);
+        doc.text(fin.totalConsomme.toFixed(2)+' DH / '+fin.totalBudget.toFixed(2)+' DH',pW-14,Yd+U(2),{align:'right'});
+        doc.setTextColor(...DARK);Yd+=U(2);
+
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'bold');doc.setTextColor(140,150,160);
+        doc.text('Théorique (temps écoulé)',fbX,Yd+U(4.6));
+        doc.setFillColor(230,233,238);doc.roundedRect(fbX+38,Yd+U(2.4),fbW-38,U(3),1,1,'F');
+        const tf2=Math.max(0,delaiInfo.timePct/100*(fbW-38));
+        if(tf2>0){doc.setFillColor(156,163,175);doc.roundedRect(fbX+38,Yd+U(2.4),tf2,U(3),1,1,'F');}
+        doc.setFontSize(Math.max(3.6,4.8*SC));doc.setFont(undefined,'bold');doc.setTextColor(120,130,140);
+        doc.text(delaiInfo.timePct.toFixed(1)+'%',fbX+38+(fbW-38)/2,Yd+U(4.3),{align:'center'});
+        doc.setTextColor(...DARK);Yd+=U(8);
+
+        const moisRestants=Math.max(1,delaiInfo.remainingDays/30.4375);
+        const restantBudget=Math.max(0,fin.totalBudget-fin.totalConsomme);
+        const valTheoMensuelle=restantBudget/moisRestants;
+        doc.setFillColor(255,251,235);doc.roundedRect(14,Yd,pW-28,U(9),1.5,1.5,'F');
+        doc.setDrawColor(252,211,77);doc.setLineWidth(0.25);doc.roundedRect(14,Yd,pW-28,U(9),1.5,1.5,'D');
+        doc.setFontSize(Math.max(4.2,6*SC));doc.setFont(undefined,'bold');doc.setTextColor(180,83,9);
+        doc.text('Valeur théorique à consommer par mois (mois restants : '+moisRestants.toFixed(1)+') :',17,Yd+U(4));
+        doc.setFontSize(Math.max(5,7*SC));doc.setFont(undefined,'bold');doc.setTextColor(120,53,15);
+        doc.text(valTheoMensuelle.toFixed(2)+' DH / mois',pW-17,Yd+U(4),{align:'right'});
+        doc.setFontSize(Math.max(4,5.5*SC));doc.setFont(undefined,'normal');doc.setTextColor(146,64,14);
+        doc.text('Budget restant : '+restantBudget.toFixed(2)+' DH',17,Yd+U(7.5));
+        doc.setTextColor(...DARK);
+        Yd+=U(9)+U(6);
+      }
     }
 
     // Signatures placed on this page (page 2) — fills remaining space
@@ -2593,14 +3236,41 @@ async function _doStatsPDF(qrDataUrl, c, filtered, proj, uname, from, to, dateSt
       r.notes||'RAS',tot];
   });
 
+  // Append budget entries as rows (filtered by période)
+  const budgetSortedF=[...budgetEntries].filter(b=>(!from||b.date>=from)&&(!to||b.date<=to)).sort((a,b)=>a.date.localeCompare(b.date));
+  const seenBudgetPDFF={};
+  const budgetRowsF=budgetSortedF.map(b=>{
+    let totBF='';
+    if(!seenBudgetPDFF[b.date]){
+      totBF=budgetSortedF.filter(x=>x.date===b.date).reduce((s,x)=>s+x.valeur,0).toFixed(2)+' DH';
+      seenBudgetPDFF[b.date]=true;
+    }
+    return[
+      new Date(b.date+'T00:00:00').toLocaleDateString('fr-FR')+' —',
+      b.saisiePar||'—',
+      'Budget / '+b.phase,
+      b.commande,
+      'Décompte budgétaire',
+      b.valeur.toFixed(2)+' DH',
+      b.notes||'RAS',
+      totBF
+    ];
+  });
+  const allRowsF=[...dRows,...budgetRowsF];
+
   doc.autoTable({
-    head:[['Date / Heure','Saisie par','Catégorie','Section','Détails','Qté/Dist.','Obs.','Total Journée']],
-    body:dRows,startY:29,
+    head:[['Date / Heure','Saisie par','Catégorie','Commande / Section','Détails','Qté / Valeur','Obs.','Total Journée']],
+    body:allRowsF,startY:29,
     styles:{fontSize:5.5,cellPadding:1.2,overflow:'linebreak'},
     headStyles:{fillColor:[130,80,200],textColor:[255,255,255],fontStyle:'bold',fontSize:6},
     alternateRowStyles:{fillColor:[247,251,255]},
-    columnStyles:{0:{cellWidth:22},1:{cellWidth:13},2:{cellWidth:18},3:{cellWidth:22},4:{cellWidth:34},5:{cellWidth:13},6:{cellWidth:17},7:{cellWidth:25}},
+    columnStyles:{0:{cellWidth:22},1:{cellWidth:13},2:{cellWidth:20},3:{cellWidth:22},4:{cellWidth:32},5:{cellWidth:15},6:{cellWidth:15},7:{cellWidth:23}},
     margin:{left:14,right:14},
+    willDrawCell:function(data){
+      if(data.section==='body'&&data.row.raw&&data.row.raw[2]&&String(data.row.raw[2]).startsWith('Budget')){
+        doc.setFillColor(255,251,235);
+      }
+    },
     didDrawPage:function(){if(doc.getNumberOfPages()>2){hdr();}ftr(doc.getNumberOfPages());}
   });
 
@@ -2652,13 +3322,16 @@ function mpProcessFiles(files){
 
         // Parse targets
         const tgtSheet = wb.SheetNames.find(s => s.toLowerCase().includes('total'));
-        let targets = {linearReseau:0, branchements:0, remiseEtat:0, raccordements:0};
+        let targets = {linearReseau:0, branchements:0, remiseEtat:0, raccordements:0, delaiMois:0, budgetReseau:0, budgetBranchements:0};
         if(tgtSheet){
           const ts = XLSX.utils.sheet_to_json(wb.Sheets[tgtSheet], {header:1});
           targets.linearReseau  = parseFloat(ts[1]?ts[1][1]:0)||0;
           targets.branchements  = parseFloat(ts[2]?ts[2][1]:0)||0;
           targets.remiseEtat    = parseFloat(ts[3]?ts[3][1]:0)||0;
           targets.raccordements = parseFloat(ts[4]?ts[4][1]:0)||0;
+          targets.delaiMois     = parseFloat(ts[5]?ts[5][1]:0)||0;
+          targets.budgetReseau       = parseFloat(ts[6]?ts[6][1]:0)||0;
+          targets.budgetBranchements = parseFloat(ts[7]?ts[7][1]:0)||0;
         }
 
         // Parse records
@@ -2668,11 +3341,26 @@ function mpProcessFiles(files){
         const projName = (jd[0] && jd[0]['Projet']) ? jd[0]['Projet'] : file.name.replace(/\.xlsx?$/i,'');
         const recs = jd.map((row,i) => parseRow(row, i));
 
+        // Parse budget entries (décomptes)
+        let budgetEntriesProj = [];
+        const budgetSheet = wb.SheetNames.find(s => s.toLowerCase().includes('budget'));
+        if(budgetSheet){
+          const bd = XLSX.utils.sheet_to_json(wb.Sheets[budgetSheet]);
+          budgetEntriesProj = bd
+            .map(row => ({
+              commande: row['N° Commande'] || row['Commande'] || '',
+              phase: row['Phase'] || '',
+              date: row['Date'] || '',
+              valeur: parseFloat(row['Valeur (DH)'] ?? row['Valeur'] ?? 0) || 0
+            }))
+            .filter(b => b.date && (b.phase === 'Réseau' || b.phase === 'Branchements'));
+        }
+
         // Check duplicate
         const existingIdx = mpProjects.findIndex(p => p.name === projName);
         if(existingIdx >= 0) mpProjects.splice(existingIdx, 1);
 
-        mpProjects.push({ name: projName, records: recs, targets, fileName: file.name });
+        mpProjects.push({ name: projName, records: recs, targets, budgetEntries: budgetEntriesProj, fileName: file.name });
       } catch(err){ console.error('Error reading', file.name, err); showToast('Erreur lecture : '+file.name, 'error'); }
       pending--;
       if(pending === 0) mpRefreshFilesList();
@@ -2699,6 +3387,7 @@ function mpRefreshFilesList(){
     </div>
     <div class="flex items-center gap-2 flex-shrink-0">
       <span class="text-[10px] px-2 py-0.5 rounded font-bold" style="background:var(--srm-blue-light);color:var(--srm-blue)">Obj. Réseau: ${proj.targets.linearReseau}m</span>
+      ${(proj.targets.budgetReseau+proj.targets.budgetBranchements)>0?`<span class="text-[10px] px-2 py-0.5 rounded font-bold" style="background:#fef3c7;color:#92400e">Budget: ${mpFmtDH(proj.targets.budgetReseau+proj.targets.budgetBranchements)}</span>`:''}
       <button onclick="mpRemoveProject(${idx})" class="text-red-400 hover:text-red-600 text-xs p-1"><i class="fa-solid fa-xmark"></i></button>
     </div>`;
     container.appendChild(div);
@@ -2720,6 +3409,20 @@ function mpClearAll(){
 }
 
 // ── AGGREGATION HELPERS ──
+function mpFmtDH(v){ return (v||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' DH'; }
+
+function mpGetBudgetCumuls(budgetEntries, targets){
+  const entries = budgetEntries || [];
+  const consReseau = entries.filter(b=>b.phase==='Réseau').reduce((s,b)=>s+(b.valeur||0),0);
+  const consBranch = entries.filter(b=>b.phase==='Branchements').reduce((s,b)=>s+(b.valeur||0),0);
+  const budR = targets.budgetReseau||0, budB = targets.budgetBranchements||0;
+  const pctR = budR>0?Math.min(100,consReseau/budR*100):0;
+  const pctB = budB>0?Math.min(100,consBranch/budB*100):0;
+  const totalBudget = budR+budB, totalConsomme = consReseau+consBranch;
+  const pctTotal = totalBudget>0?Math.min(100,totalConsomme/totalBudget*100):0;
+  return { consReseau, consBranch, budR, budB, pctR, pctB, totalBudget, totalConsomme, pctTotal };
+}
+
 function mpGetCumuls(records){
   const res = {75:0,90:0,110:0,160:0,225:0,315:0};
   const branch = {DN32:0, DN50:0};
@@ -2766,12 +3469,16 @@ function mpAnalyze(){
     cumuls: mpGetCumuls(p.records),
     avt: null
   }));
-  results.forEach(r => { r.avt = mpGetAvancement(r.cumuls, r.targets); });
+  results.forEach(r => {
+    r.avt = mpGetAvancement(r.cumuls, r.targets);
+    r.budget = mpGetBudgetCumuls(r.budgetEntries, r.targets);
+  });
 
   document.getElementById('mp-results').classList.remove('hidden');
 
   mpRenderKPI(results);
   mpRenderProgressBars(results);
+  mpRenderBudget(results);
   mpRenderCharts(results);
   mpRenderTable(results);
 
@@ -2786,11 +3493,18 @@ function mpRenderKPI(results){
   const totalRac = results.reduce((s,r)=>s+r.avt.tRac,0);
   const avgGlobal = results.reduce((s,r)=>s+r.avt.global,0)/results.length;
 
+  const totalConsomme = results.reduce((s,r)=>s+r.budget.totalConsomme,0);
+  const totalBudgetCible = results.reduce((s,r)=>s+r.budget.totalBudget,0);
+  const pctBudgetGlobal = totalBudgetCible>0 ? Math.min(100,totalConsomme/totalBudgetCible*100) : 0;
+  const coutParMetre = totalL>0 ? totalConsomme/totalL : 0;
+
   const kpis = [
     {label:'Réseau total posé', val: totalL.toFixed(1)+' m', icon:'fa-pipe', col:'var(--srm-blue)'},
     {label:'Branchements total', val: totalB+' u', icon:'fa-faucet', col:'var(--srm-green)'},
     {label:'Remise en état total', val: totalRem.toFixed(1)+' m', icon:'fa-road', col:'var(--srm-orange)'},
     {label:'Avancement moyen global', val: avgGlobal.toFixed(1)+'%', icon:'fa-gauge-high', col:'#7c3aed'},
+    {label:'Budget consommé', val: totalBudgetCible>0?mpFmtDH(totalConsomme):'—', icon:'fa-sack-dollar', col:'#d97706', sub: totalBudgetCible>0?(pctBudgetGlobal.toFixed(1)+'% de '+mpFmtDH(totalBudgetCible)):'Aucun budget renseigné'},
+    {label:'Coût moyen / mètre', val: totalL>0?mpFmtDH(coutParMetre):'—', icon:'fa-calculator', col:'#be185d'},
   ];
 
   document.getElementById('mp-kpi-grid').innerHTML = kpis.map(k => `
@@ -2798,7 +3512,7 @@ function mpRenderKPI(results){
       <i class="fa-solid ${k.icon} text-lg mb-1" style="color:${k.col}"></i>
       <p class="text-xl font-black" style="color:${k.col}">${k.val}</p>
       <p class="text-[10px] font-semibold text-gray-500 mt-0.5">${k.label}</p>
-      <p class="text-[9px] text-gray-400">${results.length} projet(s)</p>
+      <p class="text-[9px] text-gray-400">${k.sub?k.sub:results.length+' projet(s)'}</p>
     </div>`).join('');
 }
 
@@ -2821,7 +3535,55 @@ function mpRenderProgressBars(results){
   });
 }
 
-// ── CHARTS ──
+// ── BUDGET / FINANCE ──
+function mpRenderBudget(results){
+  const wrap = document.getElementById('mp-finance-card');
+  const container = document.getElementById('mp-budget-bars');
+  const totalConsomme = results.reduce((s,r)=>s+r.budget.totalConsomme,0);
+  const totalBudgetCible = results.reduce((s,r)=>s+r.budget.totalBudget,0);
+
+  if(totalBudgetCible<=0){
+    wrap.classList.remove('hidden');
+    container.innerHTML = '<p class="text-xs text-gray-400 italic">Aucun budget renseigné dans les fichiers importés (feuille "total à réaliser", cellules B7/B8, et feuille "Budget").</p>';
+    document.getElementById('mp-finance-total').innerHTML = '';
+    return;
+  }
+  wrap.classList.remove('hidden');
+
+  const pctGlobal = totalBudgetCible>0 ? Math.min(100,totalConsomme/totalBudgetCible*100) : 0;
+  const colGlobal = pctGlobal>=90?'#ef4444':pctGlobal>=70?'#d97706':'#16a34a';
+  document.getElementById('mp-finance-total').innerHTML = `
+    <div class="flex justify-between items-center mb-1">
+      <span class="text-xs font-bold text-gray-600">Budget Total Consommé — Tous Projets</span>
+      <span class="text-sm font-black" style="color:${colGlobal}">${pctGlobal.toFixed(1)}%</span>
+    </div>
+    <div class="progress-bar-bg" style="height:10px;"><div class="progress-bar-fill" style="width:${pctGlobal}%;background:linear-gradient(90deg,#d97706,#b45309);height:10px;"></div></div>
+    <p class="text-[10px] text-gray-400 mt-1.5 text-right">${mpFmtDH(totalConsomme)} / ${mpFmtDH(totalBudgetCible)}</p>`;
+
+  container.innerHTML = '<p class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color:var(--srm-text)"><i class="fa-solid fa-coins mr-1" style="color:#d97706"></i>Budget consommé par projet</p>';
+  results.forEach(r => {
+    const f = r.budget;
+    if(f.totalBudget<=0){
+      container.innerHTML += `<div class="mb-2 flex justify-between items-center">
+        <span class="text-xs font-bold text-gray-700">${r.name}</span>
+        <span class="text-[10px] text-gray-400 italic">Aucun budget renseigné</span>
+      </div>`;
+      return;
+    }
+    const col = f.pctTotal>=90?'#ef4444':f.pctTotal>=70?'#d97706':'#16a34a';
+    container.innerHTML += `<div class="mb-2">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs font-bold text-gray-700">${r.name}</span>
+        <span class="text-xs font-black" style="color:${col}">${f.pctTotal.toFixed(1)}%</span>
+      </div>
+      <div class="progress-bar-bg" style="height:9px;">
+        <div class="progress-bar-fill" style="width:${f.pctTotal}%;background:${col};height:9px;"></div>
+      </div>
+      <p class="text-[9px] text-gray-400 mt-0.5 text-right">${mpFmtDH(f.totalConsomme)} / ${mpFmtDH(f.totalBudget)}</p>
+    </div>`;
+  });
+}
+
 function mpDestroyChart(id){
   if(mpCharts[id]){ try{mpCharts[id].destroy();}catch(e){} delete mpCharts[id]; }
 }
@@ -2998,6 +3760,59 @@ function mpRenderCharts(results){
       },
       scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:9}}}}}
   });
+
+  // 7. Budget consommé vs cible
+  mpDestroyChart('budget');
+  const hasBudget = results.some(r=>r.budget && r.budget.totalBudget>0);
+  if(hasBudget){
+    mpCharts['budget'] = new Chart(document.getElementById('chart-budget'), {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          {label:'Consommé (DH)',data:results.map(r=>r.budget.totalConsomme.toFixed(2)),backgroundColor:colors,borderRadius:6},
+          {label:'Budget cible (DH)',data:results.map(r=>r.budget.totalBudget.toFixed(2)),backgroundColor:'rgba(217,119,6,0.15)',borderRadius:6,borderColor:'rgba(217,119,6,0.5)',borderWidth:1}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:9}}},
+          datalabels:{
+            display:c=>c.dataset.data[c.dataIndex]>0,
+            color:c=>c.datasetIndex===1?'#b45309':'#fff',
+            font:{weight:'bold',size:8},
+            anchor:'end',align:c=>c.datasetIndex===1?'end':'center',
+            formatter:v=>Number(v).toLocaleString('fr-FR')+' DH'
+          }
+        },
+        scales:{y:{ticks:{font:{size:9},callback:v=>v.toLocaleString('fr-FR')}}}}
+    });
+  }
+
+  // 8. Répartition budget consommé par phase (Réseau / Branchements), tous projets
+  mpDestroyChart('budget-phase');
+  const consReseauTotal = results.reduce((s,r)=>s+(r.budget?r.budget.consReseau:0),0);
+  const consBranchTotal = results.reduce((s,r)=>s+(r.budget?r.budget.consBranch:0),0);
+  if(hasBudget){
+    mpCharts['budget-phase'] = new Chart(document.getElementById('chart-budget-phase'), {
+      type:'doughnut',
+      data:{labels:['Réseau','Branchements'],datasets:[{data:[consReseauTotal.toFixed(2),consBranchTotal.toFixed(2)],backgroundColor:['#2B7FC1','#4DB05B'],hoverOffset:6}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:9},boxWidth:10}},
+          datalabels:{
+            display:c=>c.dataset.data[c.dataIndex]>0,
+            color:'#fff',
+            font:{weight:'bold',size:9},
+            formatter:(v,ctx)=>{
+              const total=ctx.dataset.data.reduce((a,b)=>a+parseFloat(b),0);
+              const pct=total>0?(v/total*100):0;
+              return Number(v).toLocaleString('fr-FR')+' DH\n('+pct.toFixed(0)+'%)';
+            }
+          }
+        }}
+    });
+  }
 }
 
 // ── DETAIL TABLE ──
@@ -3014,6 +3829,9 @@ function mpRenderTable(results){
     const pR = pct(r.avt.tL, r.targets.linearReseau);
     const pB = pct(r.avt.tB, r.targets.branchements);
     const van = r.cumuls.vannes.v150+r.cumuls.vannes.v300;
+    const f = r.budget || {totalConsomme:0,totalBudget:0,pctTotal:0};
+    const pBudget = f.totalBudget>0 ? f.pctTotal.toFixed(0)+'%' : '—';
+    const coutM = r.avt.tL>0 ? mpFmtDH(f.totalConsomme/r.avt.tL) : '—';
     return `<tr style="${bg}">
       <td class="p-2 font-bold text-xs" style="color:var(--srm-text)">${r.name}</td>
       <td class="p-2 text-center font-mono-custom font-bold" style="color:var(--srm-blue)">${r.avt.tL.toFixed(2)}</td>
@@ -3027,6 +3845,10 @@ function mpRenderTable(results){
       <td class="p-2 text-center">${van}</td>
       <td class="p-2 text-center font-black" style="${colPct(g)}">${g}</td>
       <td class="p-2 text-center">${activeDays(r.records)}</td>
+      <td class="p-2 text-center font-mono-custom" style="color:#b45309">${f.totalConsomme>0?mpFmtDH(f.totalConsomme):'—'}</td>
+      <td class="p-2 text-center text-gray-500">${f.totalBudget>0?mpFmtDH(f.totalBudget):'—'}</td>
+      <td class="p-2 text-center font-bold" style="${pBudget!=='—'?colPct(pBudget):''}">${pBudget}</td>
+      <td class="p-2 text-center text-gray-600">${coutM}</td>
     </tr>`;
   }).join('');
 
@@ -3037,6 +3859,10 @@ function mpRenderTable(results){
   const totRac = results.reduce((s,r)=>s+r.avt.tRac,0);
   const totVan = results.reduce((s,r)=>s+r.cumuls.vannes.v150+r.cumuls.vannes.v300,0);
   const avgAvt = (results.reduce((s,r)=>s+r.avt.global,0)/results.length).toFixed(1)+'%';
+  const totConsomme = results.reduce((s,r)=>s+(r.budget?r.budget.totalConsomme:0),0);
+  const totBudgetCible = results.reduce((s,r)=>s+(r.budget?r.budget.totalBudget:0),0);
+  const pctBudgetTot = totBudgetCible>0?Math.min(100,totConsomme/totBudgetCible*100).toFixed(0)+'%':'—';
+  const coutMGlobal = totL>0 ? mpFmtDH(totConsomme/totL) : '—';
   tfoot.innerHTML = `<tr style="background:linear-gradient(90deg,#ede9fe,#f5f3ff);font-weight:900;">
     <td class="p-2 text-xs" style="color:#7c3aed">TOTAL / MOYENNE (${results.length} projets)</td>
     <td class="p-2 text-center" style="color:var(--srm-blue)">${totL.toFixed(2)}</td>
@@ -3050,6 +3876,10 @@ function mpRenderTable(results){
     <td class="p-2 text-center">${totVan}</td>
     <td class="p-2 text-center" style="color:#7c3aed">${avgAvt}</td>
     <td class="p-2 text-center">${results.reduce((s,r)=>s+new Set(r.records.map(rec=>rec.dateStr).filter(Boolean)).size,0)}</td>
+    <td class="p-2 text-center" style="color:#b45309">${totConsomme>0?mpFmtDH(totConsomme):'—'}</td>
+    <td class="p-2 text-center text-gray-400">${totBudgetCible>0?mpFmtDH(totBudgetCible):'—'}</td>
+    <td class="p-2 text-center" style="color:#b45309">${pctBudgetTot}</td>
+    <td class="p-2 text-center text-gray-500">${coutMGlobal}</td>
   </tr>`;
 }
 
@@ -3057,17 +3887,20 @@ function mpRenderTable(results){
 function mpExportPDF(){
   if(!mpProjects.length){ showToast('Aucun projet à exporter !','error'); return; }
   const results = mpProjects.map(p => ({...p, cumuls:mpGetCumuls(p.records), avt:null}));
-  results.forEach(r => { r.avt = mpGetAvancement(r.cumuls, r.targets); });
+  results.forEach(r => { r.avt = mpGetAvancement(r.cumuls, r.targets); r.budget = mpGetBudgetCumuls(r.budgetEntries, r.targets); });
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('fr-FR');
   const timeStr = now.toLocaleTimeString('fr-FR');
   const uname = currentUser ? (USERS[currentUser]?.displayName||currentUser) : '—';
 
+  const totalConsommeQR = results.reduce((s,r)=>s+r.budget.totalConsomme,0);
+  const totalBudgetQR = results.reduce((s,r)=>s+r.budget.totalBudget,0);
   const qrText = 'Consolidation Multi-Projets\nÉtabli par: '+uname+'\nExport: '+dateStr+' '+timeStr+
     '\nNombre de projets: '+results.length+
     '\nTotal réseau: '+results.reduce((s,r)=>s+r.avt.tL,0).toFixed(2)+' m'+
-    '\nTotal branchements: '+results.reduce((s,r)=>s+r.avt.tB,0)+' u';
+    '\nTotal branchements: '+results.reduce((s,r)=>s+r.avt.tB,0)+' u'+
+    (totalBudgetQR>0?('\nBudget consommé: '+totalConsommeQR.toFixed(2)+' / '+totalBudgetQR.toFixed(2)+' DH'):'');
 
   function fetchQR(text,cb){
     var enc=encodeURIComponent(text.substring(0,400));
@@ -3125,6 +3958,9 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
   const totRem = results.reduce((s,r)=>s+r.avt.tRem,0);
   const totRac = results.reduce((s,r)=>s+r.avt.tRac,0);
   const avgAvt = results.reduce((s,r)=>s+r.avt.global,0)/results.length;
+  const totConsomme = results.reduce((s,r)=>s+r.budget.totalConsomme,0);
+  const totBudgetCible = results.reduce((s,r)=>s+r.budget.totalBudget,0);
+  const pctBudgetGlobal = totBudgetCible>0?Math.min(100,totConsomme/totBudgetCible*100):0;
 
   doc.autoTable({head:[['Réseau Total (m)','Branchements Total (u)','Remise Total (m)','Raccordements Total (u)','Avancement Moyen']],
     body:[[totL.toFixed(2),totB,totRem.toFixed(2),totRac,avgAvt.toFixed(1)+'%']],
@@ -3133,6 +3969,16 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
     bodyStyles:{fillColor:[245,243,255],textColor:PU},
     margin:{left:14,right:14},tableWidth:pW-28});
   Y = doc.lastAutoTable.finalY+4;
+
+  if(totBudgetCible>0){
+    doc.autoTable({head:[['Budget Consommé (DH)','Budget Cible (DH)','% Consommé Global']],
+      body:[[totConsomme.toFixed(2),totBudgetCible.toFixed(2),pctBudgetGlobal.toFixed(1)+'%']],
+      startY:Y,styles:{fontSize:8,cellPadding:3,halign:'center',fontStyle:'bold'},
+      headStyles:{fillColor:[217,119,6],textColor:[255,255,255],fontSize:7},
+      bodyStyles:{fillColor:[254,243,235],textColor:[180,83,9]},
+      margin:{left:14,right:14},tableWidth:pW-28});
+    Y = doc.lastAutoTable.finalY+4;
+  }
 
   // Per-project table
   doc.setFillColor(PU[0],PU[1],PU[2]); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
@@ -3185,7 +4031,7 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
   results.forEach((r,pi) => {
     const col  = pi%2===0 ? 14 : 14+colW+10;
     const rowY = pi%2===0 ? Y : Y;
-    if(pi>0&&pi%2===0) Y+=60;
+    if(pi>0&&pi%2===0) Y+=72;
 
     doc.setFillColor(...GR); doc.roundedRect(col,Y,colW,6,1,1,'F');
     doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(DK[0],DK[1],DK[2]);
@@ -3200,6 +4046,9 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
       {v:r.avt.tRem,t:r.targets.remiseEtat,n:'Remise',u:'m',c:O},
       {v:r.avt.tRac,t:r.targets.raccordements,n:'Raccords',u:'u',c:PU}
     ];
+    if(r.budget && r.budget.totalBudget>0){
+      phases.push({v:Math.round(r.budget.totalConsomme),t:Math.round(r.budget.totalBudget),n:'Budget',u:'DH',c:[217,119,6]});
+    }
     phases.forEach(ph => {
       const p = ph.t>0 ? Math.min(100,ph.v/ph.t*100) : 0;
       doc.setFontSize(6.5); doc.setFont(undefined,'bold'); doc.setTextColor(60,70,80);
@@ -3213,7 +4062,7 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
       if(filled>8){ doc.setFontSize(5.5); doc.setFont(undefined,'bold'); doc.setTextColor(pc[0],pc[1],pc[2]); doc.text(p.toFixed(0)+'%',col+filled/2,phY+7.5,{align:'center'}); }
       phY+=12;
     });
-    if(pi%2===1) Y+=60;
+    if(pi%2===1) Y+=72;
   });
 
   ftr(2);
@@ -3225,7 +4074,9 @@ function _mpDoPDF(qrDU, results, uname, dateStr, timeStr){
     {id:'chart-branch',     title:'BRANCHEMENTS RÉALISÉS (u) PAR PROJET'},
     {id:'chart-remise',     title:'REMISE EN ÉTAT (m) PAR PROJET'},
     {id:'chart-dn-donut',   title:'RÉPARTITION LINÉAIRE PAR DIAMÈTRE (TOUS PROJETS)'},
-    {id:'chart-timeline',   title:'PRODUCTION LINÉAIRE CUMULÉE DANS LE TEMPS'}
+    {id:'chart-timeline',   title:'PRODUCTION LINÉAIRE CUMULÉE DANS LE TEMPS'},
+    {id:'chart-budget',       title:'BUDGET CONSOMMÉ VS CIBLE PAR PROJET (DH)'},
+    {id:'chart-budget-phase', title:'RÉPARTITION DU BUDGET CONSOMMÉ (RÉSEAU / BRANCHEMENTS)'}
   ];
 
   doc.addPage(); hdr();
