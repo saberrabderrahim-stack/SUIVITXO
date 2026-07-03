@@ -2182,7 +2182,7 @@ function calculateStatistics(){
   let dn={'75':0,'90':0,'110':0,'160':0,'225':0,'315':0},br32=0,br50=0,day=0,mon=0,vn15=0,vn30=0,rc20=0,rc30=0;
   const td=new Date().toISOString().split('T')[0],cm=td.substring(0,7);
   records.forEach(r=>{
-    if(r.category==='Réseau'){if(r.dn&&dn[r.dn]!==undefined)dn[r.dn]+=(r.distance||0);vn15+=(r.v150_qty||0);vn30+=(r.v300_qty||0);if(r.distance&&r.dateStr===td)day+=r.distance;if(r.distance&&r.dateStr&&r.dateStr.startsWith(cm))mon+=r.distance;}
+    if(r.category==='Réseau'){if(r.dn&&dn[r.dn]!==undefined)dn[r.dn]+=(r.distance||0);vn15+=(r.v150_qty||0);vn30+=(r.v300_qty||0);if(r.distance&&r.dateStr===td)day+=r.distance;if(r.distance)mon+=r.distance;}
     if(r.category==='Branchements'){br32+=(r.br_dn32_qty||0);br50+=(r.br_dn50_qty||0);}
     if(r.category==='Mise en service'&&r.ms_data){rc20+=(r.ms_data.r200||0);rc30+=(r.ms_data.r300||0);}
   });
